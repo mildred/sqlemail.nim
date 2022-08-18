@@ -11,4 +11,4 @@ proc init_routes*(app: Prologue) =
   app.addRoute("/login", login.get, HttpGet)
   app.addRoute("/login", login.post, HttpPost)
   app.addRoute("/login/{email}", login.get, HttpGet)
-  app.addRoute("/login/{email}", login.post, HttpPost)
+  app.addRoute("/login/{email}/{code}", login.get, HttpGet)

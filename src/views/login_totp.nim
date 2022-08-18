@@ -3,11 +3,11 @@ import qr
 
 import ./common
 
-func login_totp*(email: string): string = tmpli html"""
+func login_totp*(email, otp: string): string = tmpli html"""
   <article>
-    <form method="POST" action="?">
+    <form method="POST" action="/login">
       <input type="hidden" name="email" value="$(h(email))" />
-      <input type="input" name="otp" />
+      <input type="input" name="otp" value="$(h(otp))" />
       <input type="submit" value="Log-In"/>
     </form>
   </article>

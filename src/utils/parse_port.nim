@@ -35,5 +35,5 @@ proc parse_addr_and_port*(arg: string, def: int): (string, Port) =
   if parts.len == 2:
     return (parts[0], Port(parse_int(parts[1])))
   else:
-    return ("", Port(parse_int(arg)))
+    return (arg, Port(def))
 

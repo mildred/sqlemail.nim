@@ -19,11 +19,13 @@ Usage: nimnews [options]
 Options:
   -h, --help            Print help
   --version             Print version
-  -p, --port <port>     Specify a different port [default: 8080]
+  -p, --listen <addr>   Specify a different port [default: localhost:8080]
                         Specify sd=0 for first systemd socket activation
                         or specify sd=[NAME:]N
   --secretkey <key>     Secret key for HTTP sessions
   -d, --db <file>       Database file [default: ./disputatio.sqlite]
+  --smtp <server>       SMTP server for sending e-mails
+  --sender <email>      Sending address for e-mails
 """) & (when not defined(version): "" else: &"""
 
 Version: {version}
@@ -41,8 +43,8 @@ when isMainModule:
       quit(1)
 
   let
-    arg_fd               = parse_sd_socket_activation($args["--port"])
-    (arg_addr, arg_port) = parse_addr_and_port($args["--port"], 119)
+    arg_fd               = parse_sd_socket_activation($args["--listen"])
+    (arg_addr, arg_port) = parse_addr_and_port($args["--listen"], 8080)
 
   var secretkey = $args["--secretkey"]
   if secretkey == "":
@@ -58,7 +60,9 @@ when isMainModule:
 
   let settings = newSettings(address = arg_addr, port = arg_port, secret_key = secret_key)
   var app = newApp(settings)
-  app.use(contextMiddleware($args["--db"]))
+  app.use(contextMiddleware($args["--db"],
+                            if args["--smtp"]:   $args["--smtp"]   else: "",
+                            if args["--sender"]: $args["--sender"] else: ""))
   app.use(sessionMiddleware(settings))
   init_routes(app)
   app.run(AppContext)
