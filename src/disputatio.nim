@@ -6,7 +6,8 @@ import docopt
 
 import ./db/migration
 import ./utils/parse_port
-
+import ./routes
+import ./context
 
 const version {.strdefine.}: string = "(no version information)"
 
@@ -57,5 +58,7 @@ when isMainModule:
 
   let settings = newSettings(address = arg_addr, port = arg_port, secret_key = secret_key)
   var app = newApp(settings)
+  app.use(contextMiddleware($args["--db"]))
   app.use(sessionMiddleware(settings))
-  app.run()
+  init_routes(app)
+  app.run(AppContext)

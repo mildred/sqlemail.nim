@@ -20,61 +20,27 @@ proc migrate*(db: var Database): bool =
       of 0:
         description = "database initialized"
         db.exec("""
-          CREATE TABLE IF NOT EXISTS templates (
-            id            INTEGER PRIMARY KEY NOT NULL,
-            parent_id     INTEGER,
-            name          TEXT NOT NULL,
-            nargs         INTEGER NOT NULL,
-            nrows         INTEGER NOT NULL,
-            ncols         INTEGER NOT NULL,
-            result_col    INTEGER NOT NULL,
-            result_row    INTEGER NOT NULL,
-            FOREIGN KEY (parent_id) REFERENCES templates (id),
-            CONSTRAINT sheet_unique_name UNIQUE (parent_id, name)
+          CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY NOT NULL
           );
         """)
         db.exec("""
-          CREATE TABLE IF NOT EXISTS cells (
-            template_id   INTEGER NOT NULL,
-            row           INTEGER NOT NULL,
-            col           INTEGER NOT NULL,
-            formula       TEXT NOT NULL,
-            PRIMARY KEY (template_id, row, col),
-            FOREIGN KEY (template_id) REFERENCES templates (id)
+          CREATE TABLE IF NOT EXISTS user_pods (
+            user_id       INTEGER NOT NULL,
+            pod_url       TEXT NOT NULL,
+            PRIMARY KEY (user_id, pod_url),
+            FOREIGN KEY (user_id) REFERENCES users (id)
           );
         """)
         db.exec("""
-          CREATE TABLE IF NOT EXISTS sheets (
-            id            INTEGER PRIMARY KEY NOT NULL,
-            parent_id     INTEGER,
-            parent_col    INTEGER,
-            parent_row    INTEGER,
-            template_id   INTEGER NOT NULL,
-            FOREIGN KEY (parent_id) REFERENCES sheets (id)
-            FOREIGN KEY (parent_id, parent_col, parent_row) REFERENCES cells (template_id, col, row)
-            FOREIGN KEY (template_id) REFERENCES templates (id)
-          );
-        """)
-        db.exec("""
-          CREATE TABLE IF NOT EXISTS results (
-            sheet_id      INTEGER NOT NULL,
-            row           INTEGER NOT NULL,
-            col           INTEGER NOT NULL,
-            type          TEXT NOT NULL,
-            value         JSON NOT NULL,
-            PRIMARY KEY (sheet_id, row, col),
-            FOREIGN KEY (sheet_id) REFERENCES sheets (id)
-          );
-        """)
-        db.exec("""
-          CREATE TABLE IF NOT EXISTS cell_xref (
-            template_id     INTEGER NOT NULL,
-            col             INTEGER NOT NULL,
-            row             INTEGER NOT NULL,
-            ref_template_id INTEGER NOT NULL,
-            ref_col         INTEGER NOT NULL,
-            ref_row         INTEGER NOT NULL,
-            PRIMARY KEY (template_id, col, row, ref_template_id, ref_col, ref_row)
+          CREATE TABLE IF NOT EXISTS user_emails (
+            user_id       INTEGER NOT NULL,
+            email_hash    TEXT NOT NULL,
+            totp_url      TEXT,
+            valid         BOOLEAN DEFAULT FALSE,
+            PRIMARY KEY (user_id, email_hash),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            CONSTRAINT email_hash_unique UNIQUE (email_hash)
           );
         """)
         user_version = 1
