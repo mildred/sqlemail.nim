@@ -9,7 +9,7 @@ import nauthy
 import ../utils/parse_port
 import ../context
 import ../db/users
-import ../views/[layout, login_form, login_totp]
+import ../views/[layout, login_form, login_totp, logout_form]
 
 import prologue
 
@@ -50,7 +50,7 @@ proc get*(ctx: Context) {.async, gcsafe.} =
 
   # No email: provide login form to ask for email
   if email == "" or user.is_none():
-    resp layout(login_form(), title = "Login")
+    resp ctx.layout(login_form(), title = "Login")
     return
 
   let totp_url = user.get().get_email(email_hash).get().totp_url
@@ -60,10 +60,10 @@ proc get*(ctx: Context) {.async, gcsafe.} =
   if user.is_some:
     let current_user = user.get().get_email(hash_email(ctx.session.getOrDefault("email", "")))
     if current_user.is_some():
-      resp layout(login_totp_ok(totp_url) & login_totp(email, code), title = "TOTP")
+      resp ctx.layout(login_totp_ok(totp_url) & login_totp(email, code), title = "TOTP")
       return
 
-  resp layout(login_totp(email, code), title = "Login")
+  resp ctx.layout(login_totp(email, code), title = "Login")
 
 proc post*(ctx: Context) {.async, gcsafe.} =
   var totp: Totp
@@ -100,11 +100,17 @@ proc post*(ctx: Context) {.async, gcsafe.} =
 
   let totp_url = user.get().get_email(email_hash).get().totp_url
   if not validate_totp(totp_url, otp.get, 10*60):
-    resp layout(login_form(), title = "Retry Login")
+    resp ctx.layout(login_form(), title = "Retry Login")
     return
 
   db[].user_email_mark_valid(email_hash)
   ctx.session["email"] = email
 
-  resp layout(login_totp_ok(totp_url), title = "Login succeeded")
+  resp ctx.layout(login_totp_ok(totp_url), title = "Login succeeded")
 
+proc get_logout*(ctx: Context) {.async, gcsafe.} =
+  resp ctx.layout(logout_form(), title = "Logout")
+
+proc post_logout*(ctx: Context) {.async, gcsafe.} =
+  ctx.session.del("email")
+  resp redirect("/")

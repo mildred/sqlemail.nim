@@ -1,8 +1,9 @@
 import templates
+import prologue
 
 import ./common
 
-func layout*(main, title: string): string = tmpli html"""
+func layout*(ctx: Context, main, title: string): string = tmpli html"""
   <html>
     <head>
       <title>$(h(title)) - Accounts</title>
@@ -31,6 +32,22 @@ func layout*(main, title: string): string = tmpli html"""
     </head>
     <body>
       <header>
+        <nav>
+          <a href="/">Home</a>
+          <ul>
+            $if ctx.session.getOrDefault("email", "") == "" {
+              <li><a href="/login">Login</a></li>
+            }
+            $else {
+              <li>
+                <a href="/login/$(h(ctx.session.getOrDefault("email", "")))">$(h(ctx.session.getOrDefault("email", "")))</a>
+                <ul>
+                  <li><a href="/logout">Logout</a></li>
+                </ul>
+              </li>
+            }
+          </ul>
+        </nav>
         <h1>$title</h1>
       </header>
       <main>
