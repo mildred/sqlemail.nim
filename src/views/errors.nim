@@ -1,8 +1,8 @@
 import templates
 
-func error404*(): string = tmpli html"""
+func error_page*(message: string): string = tmpli html"""
   <article>
-    <p>Page not found.</p>
+    <p>$message</p>
   </article>
   """
 

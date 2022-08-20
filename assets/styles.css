@@ -1,0 +1,58 @@
+html {
+  --color-warn: #fecf6a;
+  --color-link: #194a8d;
+  --color-bgui: #e0e0e0;
+}
+
+form[role=none] {
+  display: inline;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+[role=link] {
+  display: inline-block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  color: var(--color-secondary);
+  font-weight: bold;
+}
+[role=link]:hover {
+  filter: brightness(var(--hover-brightness));
+  text-decoration: underline;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 0.2em solid;
+  border-color: currentcolor currentcolor currentcolor transparent;
+  border-radius: 50%;
+  animation: spin-anim 1.2s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+}
+.spinner.invisible {
+  visibility: hidden;
+}
+.spinner.hidden {
+  display: none;
+}
+button :first-child.spinner {
+  position: absolute;
+  margin-left: -1.5em;
+  font-size: 0.5em;
+  margin-top: 1em;
+}
+
+@keyframes spin-anim {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}

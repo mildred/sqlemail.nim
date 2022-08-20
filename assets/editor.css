@@ -1,0 +1,40 @@
+.editor-unsaved {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  margin: 0;
+  background-color: var(--color-warn);
+  padding: 0.5em;
+}
+.editor button {
+  padding: 0 1em;
+  margin: 0;
+}
+.editor-menu {
+  background-color: var(--color-bgui);
+  padding: 0.5em;
+  border-radius: 0.5em;
+}
+.editor-menu button svg {
+  height: calc(var(--line-height) * 1em);
+  width: 1em;
+  display: inline-block;
+}
+.editor-menu button {
+  font-weight: normal;
+  vertical-align: top;
+}
+.editor-menu button:not(.is-active) {
+  background-color: unset;
+  color: var(--color-link);
+}
+.editor-menu button[name="bold"] { font-weight: bold }
+.editor-menu button[name="italic"] { font-style: italic }
+.editor-menu button[name="underline"] { text-decoration: underline }
+.editor-menu button[name="strike"] { text-decoration: line-through }
+body {
+  /* Ensures that there is enough padding for the save banner */
+  padding-bottom: 5rem;
+}

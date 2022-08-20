@@ -24,6 +24,7 @@ Options:
                         or specify sd=[NAME:]N
   --secretkey <key>     Secret key for HTTP sessions
   -d, --db <file>       Database file [default: ./disputatio.sqlite]
+  --assets <dir>        Assets directory [default: ./assets/]
   --smtp <server>       SMTP server for sending e-mails
   --sender <email>      Sending address for e-mails
 """) & (when not defined(version): "" else: &"""
@@ -60,7 +61,7 @@ when isMainModule:
 
   let settings = newSettings(address = arg_addr, port = arg_port, secret_key = secret_key)
   var app = newApp(settings)
-  app.use(contextMiddleware($args["--db"],
+  app.use(contextMiddleware($args["--db"], $args["--assets"],
                             if args["--smtp"]:   $args["--smtp"]   else: "",
                             if args["--sender"]: $args["--sender"] else: ""))
   app.use(sessionMiddleware(settings))

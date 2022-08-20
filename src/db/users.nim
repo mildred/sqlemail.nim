@@ -1,12 +1,21 @@
 import std/options
 import std/sysrand
-import std/sha1
+import std/md5
 import std/times
 import easy_sqlite3
 import nauthy
 
-proc hash_email*(email: string): string =
-  result = $sha1.secureHash(email)
+func hash_email*(email: string): string =
+  #result = $sha1.secureHash(email)
+  #result = get_md5(email)
+
+  var
+    c: MD5Context
+    d: MD5Digest
+  md5Init(c)
+  md5Update(c, cstring(email), len(email))
+  md5Final(c, d)
+  result = $d
 
 proc gen_totp*(issuer, email: string): Totp =
   var totp = initTotp(urandom(16), b32Decode = false)
@@ -32,6 +41,7 @@ type
   UserPod* = tuple
     pod_url: string
   User* = tuple
+    id:     int
     emails: seq[UserEmail]
     pods:   seq[UserPod]
 
@@ -70,6 +80,7 @@ proc get_user*(db: var Database, email_hash: string): Option[User] =
     return none(User)
 
   var res: User
+  res.id = user_id.get.user_id
   res.pods = @[]
   res.emails = @[]
   for e in db.get_emails(user_id.get().user_id): res.emails.add(e)

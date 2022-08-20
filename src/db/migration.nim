@@ -44,6 +44,48 @@ proc migrate*(db: var Database): bool =
           );
         """)
         user_version = 1
+      of 1:
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS paragraphs (
+            id          INTEGER PRIMARY KEY NOT NULL,
+            guid        TEXT NOT NULL,
+            text        TEXT NOT NULL,
+            style       TEXT NOT NULL DEFAULT '',
+            CONSTRAINT guid_unique UNIQUE (guid)
+          );
+        """)
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS patches (
+            id          INTEGER PRIMARY KEY NOT NULL,
+            guid        TEXT NOT NULL,
+            parent_id   INTEGER,
+            timestamp   REAL NOT NULL DEFAULT (julianday('now')),
+            FOREIGN KEY (parent_id) REFERENCES patches (id),
+            CONSTRAINT guid_unique UNIQUE (guid)
+          );
+        """)
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS patch_items (
+            patch_id     INTEGER NOT NULL,
+            paragraph_id INTEGER NOT NULL,
+            rank         INTEGER NOT NULL,
+            PRIMARY KEY (patch_id, paragraph_id),
+            FOREIGN KEY (patch_id) REFERENCES patches (id),
+            FOREIGN KEY (paragraph_id) REFERENCES paragraphs (id)
+          );
+        """)
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS articles (
+            id          INTEGER PRIMARY KEY NOT NULL,
+            patch_id    INTEGER NOT NULL,
+            user_id     INTEGER NOT NULL,
+            name        TEXT NOT NULL,
+            timestamp   REAL NOT NULL DEFAULT (julianday('now')),
+            FOREIGN KEY (patch_id) REFERENCES patches (id),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+          );
+        """)
+        user_version = 2
       else:
         migrating = false
       if migrating:
