@@ -28,8 +28,10 @@ proc parse_style*(style: string): Style =
       item.name = parts[0]
       item.classes = parts[1..^1]
       result.path.add(item)
+  if result.path.len > 0:
+    result.path[result.path.len - 1].merge_previous = false
 
-proc html_close_open_style(parts: var seq[string], last_style, style: Style) =
+proc html_close_open_style(parts: var seq[string], last_style, style: Style, open_id: string = "") =
   var close_tags: seq[string]
   var i = last_style.path.len - 1
   while i >= 0:
@@ -43,19 +45,25 @@ proc html_close_open_style(parts: var seq[string], last_style, style: Style) =
   while i < style.path.len:
     #echo &"i={i} add {style.path[i].name}"
     parts.add(["<", h(style.path[i].name)])
+    if i == style.path.len - 1 and open_id != "":
+      parts.add([" id=\"", open_id, "\""])
     if style.path[i].classes.len > 0:
       parts.add([" class=\"", h(style.path[i].classes.join(" ")), "\""])
     parts.add(">")
     i = i + 1
 
-proc to_html*(article: Article): string =
+type AfterParagraphCallback = proc(p: Paragraph): string
+
+proc to_html*(article: Article, after: AfterParagraphCallback = nil): string =
   var parts: seq[string] = @[]
   var style, last_style: Style
   for p in article.paragraphs:
     last_style = style
     style = p.style.parse_style()
-    html_close_open_style(parts, last_style, style)
+    html_close_open_style(parts, last_style, style, "paragraph-" & p.guid)
     parts.add(h(p.text))
+    if after != nil:
+      parts.add(after(p))
 
   last_style = style
   style.path = @[]

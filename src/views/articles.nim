@@ -21,7 +21,25 @@ func article_index*(): string = tmpli html"""
 """
 
 func article_view*(patch_id, markup: string): string = tmpli html"""
-  <article data-patch-id="$(h(patch_id))">$markup</article>
+  <nav>
+    <ul>
+      <li><a href="./edit">Edit</a></li>
+    </ul>
+  </nav>
+  <script>
+    // https://github.com/atomiks/tippyjs/issues/990
+    window.process = { env: { NODE_ENV: 'production' }}
+  </script>
+  <template name="viewer-paragraph-menu">
+    <div class="viewer viewer-menu hmenu">
+      <button name="comment"><svg fill="currentColor"><use xlink:href="/assets/bootstrap-icons.svg#chat-left-text"/></svg></button>
+    </div>
+  </template>
+  <script type="module" src="/assets/viewer.js"></script>
+  <style>
+    @import url(/assets/viewer.css)
+  </style>
+  <article data-patch-id="$(h(patch_id))" class="viewer">$markup</article>
 """
 
 func article_editor*(patch_id, markup: string): string = tmpli html"""
@@ -31,7 +49,7 @@ func article_editor*(patch_id, markup: string): string = tmpli html"""
   </script>
   <script type="module" src="/assets/editor.js"></script>
   <template name="editor-bubble-menu">
-    <div class="editor editor-menu">
+    <div class="editor editor-menu hmenu">
       <button name="bold">B</button>
       <button name="italic">I</button>
       <button name="underline">U</button>
@@ -39,7 +57,7 @@ func article_editor*(patch_id, markup: string): string = tmpli html"""
     </div>
   </template>
   <template name="editor-floating-menu">
-    <div class="editor editor-menu">
+    <div class="editor editor-menu hmenu">
       <button name="h1">H1</button>
       <button name="h2">H2</button>
       <button name="ul"><svg fill="currentColor"><use xlink:href="/assets/bootstrap-icons.svg#list-ul"/></svg></button>
@@ -50,6 +68,11 @@ func article_editor*(patch_id, markup: string): string = tmpli html"""
   <style>
     @import url(/assets/editor.css)
   </style>
+  <nav>
+    <ul>
+      <li><a href="./">View</a></li>
+    </ul>
+  </nav>
   <article>
     <div class="html-editor" name="editor" data-patch-id="$(h(patch_id))">$markup</div>
   </article>

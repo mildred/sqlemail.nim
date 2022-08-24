@@ -28,6 +28,7 @@ proc migrate*(db: var Database): bool =
           CREATE TABLE IF NOT EXISTS user_pods (
             user_id       INTEGER NOT NULL,
             pod_url       TEXT NOT NULL,
+            local_user_id TEXT NOT NULL,
             PRIMARY KEY (user_id, pod_url),
             FOREIGN KEY (user_id) REFERENCES users (id)
           );
@@ -59,7 +60,6 @@ proc migrate*(db: var Database): bool =
             id          INTEGER PRIMARY KEY NOT NULL,
             guid        TEXT NOT NULL,
             parent_id   INTEGER,
-            timestamp   REAL NOT NULL DEFAULT (julianday('now')),
             FOREIGN KEY (parent_id) REFERENCES patches (id),
             CONSTRAINT guid_unique UNIQUE (guid)
           );
@@ -75,17 +75,64 @@ proc migrate*(db: var Database): bool =
           );
         """)
         db.exec("""
+          CREATE TABLE IF NOT EXISTS types (
+            type        TEXT PRIMARY KEY NOT NULL
+          );
+        """)
+        db.exec("""
+          INSERT INTO types (type) VALUES ('subject'), ('article'), ('paragraph');
+        """)
+        TODO: replace name with reply_guid and add a table topics with the same and a guid associated with that name that can join with the reply_guid here. Allow replies to reply to a paragraph in the context of a specific article / subject. (do not show comments in identical paragraphs of unrelated articles)
+        db.exec("""
           CREATE TABLE IF NOT EXISTS articles (
             id          INTEGER PRIMARY KEY NOT NULL,
             patch_id    INTEGER NOT NULL,
             user_id     INTEGER NOT NULL,
-            name        TEXT NOT NULL,
+            name        TEXT,
+            reply_guid  TEXT NOT NULL,
+            reply_index INTEGER DEFAULT 0,
+            reply_type  TEXT NOT NULL,
             timestamp   REAL NOT NULL DEFAULT (julianday('now')),
+            FOREIGN KEY (reply_type) REFERENCES types (type),
             FOREIGN KEY (patch_id) REFERENCES patches (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
           );
         """)
         user_version = 2
+      of 2:
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS group_items (
+            id                       INTEGER PRIMARY KEY NOT NULL,
+            guid                     TEXT NOT NULL,
+            root_guid                TEXT NOT NULL,
+            parent_id                INTEGER DEFAULT NULL,
+            parent_guid              TEXT DEFAULT NULL,
+            seed_userdata            TEXT NOT NULL DEFAULT '',
+            others_members_weight    REAL DEFAULT 0,
+            moderation_default_score REAL DEFAULT 0,
+            FOREIGN KEY (root_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_id) REFERENCES group_items (id),
+            CONSTRAINT guid_unique UNIQUE (guid)
+          );
+        """)
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS group_members (
+            id                 INTEGER PRIMARY KEY NOT NULL,
+            obsoleted_by       INTEGER DEFAULT NULL,
+            group_item_id      INTEGER NOT NULL,
+            external           BOOLEAN NOT NULL,
+            weight             REAL NOT NULL DEFAULT 1,
+            nickname           TEXT,
+            pod_url            TEXT,
+            local_user_id      TEXT,
+            user_id            INTEGER,
+            FOREIGN KEY (obsoleted_by) REFERENCES group_members (id),
+            FOREIGN KEY (group_item_id) REFERENCES group_items (id),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+          );
+        """)
+        user_version = 3
       else:
         migrating = false
       if migrating:

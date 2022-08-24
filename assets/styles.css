@@ -56,3 +56,35 @@ button :first-child.spinner {
         transform: rotate(360deg);
     }
 }
+
+button {
+  padding: 0 1em;
+  margin: 0;
+}
+
+body > header {
+  padding: 0 1rem;
+}
+
+nav {
+  margin: 0;
+}
+
+.hmenu {
+  background-color: var(--color-bgui);
+  padding: 0.5em;
+  border-radius: 0.5em;
+}
+.hmenu button svg {
+  height: calc(var(--line-height) * 1em);
+  width: 1em;
+  display: inline-block;
+}
+.hmenu button {
+  font-weight: normal;
+  vertical-align: top;
+}
+.hmenu button:not(.is-active) {
+  background-color: unset;
+  color: var(--color-link);
+}

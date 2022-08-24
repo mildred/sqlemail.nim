@@ -1,0 +1,6 @@
+.viewer [id^="paragraph-"] {
+  border: 1px solid transparent;
+}
+.viewer [id^="paragraph-"]:hover {
+  border-color: var(--color-bgui);
+}

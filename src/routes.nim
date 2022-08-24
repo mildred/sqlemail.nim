@@ -1,6 +1,6 @@
 import prologue
 
-import ./controllers/[login,articles,errors,assets]
+import ./controllers/[login,articles,errors,assets,groups,home]
 
 proc ensureLoggedIn(): HandlerAsync =
   result = proc(ctx: Context) {.async.} =
@@ -8,12 +8,14 @@ proc ensureLoggedIn(): HandlerAsync =
       resp redirect("/login")
 
 proc init_routes*(app: Prologue) =
+  app.addRoute("/", home.index, HttpGet)
   app.addRoute("/logout", login.get_logout, HttpGet)
   app.addRoute("/logout", login.post_logout, HttpPost)
   app.addRoute("/login", login.get, HttpGet)
   app.addRoute("/login", login.post, HttpPost)
   app.addRoute("/login/{email}", login.get, HttpGet)
   app.addRoute("/login/{email}/{code}", login.get, HttpGet)
+  app.addRoute("/@/", groups.create, HttpPost)
   app.addRoute("/~{userguid}/", articles.index, HttpGet)
   app.addRoute("/~{userguid}/", articles.create, HttpPost)
   app.addRoute("/~{userguid}/{name}/", articles.show, HttpGet)

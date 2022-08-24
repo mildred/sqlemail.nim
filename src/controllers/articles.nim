@@ -37,7 +37,7 @@ proc show*(ctx: Context) {.async, gcsafe.} =
     return ctx.go404()
 
   let markup = art.get.to_html()
-  resp ctx.layout(article_view(art.get.patch_guid, markup), title = name)
+  resp ctx.layout(article_view(art.get.patch_guid, markup))
 
 proc update*(ctx: Context) {.async, gcsafe.} =
   let db = AppContext(ctx).db
@@ -80,7 +80,7 @@ proc edit*(ctx: Context) {.async, gcsafe.} =
     patch_id = art.get.patch_guid
   else:
     markup = &"<h1>{h(name)}</h1>"
-  resp ctx.layout(article_editor(patch_id, markup), title = name)
+  resp ctx.layout(article_editor(patch_id, markup))
 
 proc get_json*(ctx: Context) {.async, gcsafe.} =
   let db = AppContext(ctx).db

@@ -4,7 +4,7 @@ import prologue
 import ./common
 import ../context
 
-func layout*(ctx: Context, main, title: string): string = tmpli html"""
+func layout*(ctx: Context, main: string, title: string = ""): string = tmpli html"""
   <html>
     <head>
       <title>$(h(title)) - Accounts</title>
@@ -86,7 +86,9 @@ func layout*(ctx: Context, main, title: string): string = tmpli html"""
             }
           </ul>
         </nav>
-        <h1>$title</h1>
+        $if title != "" {
+          <h1>$title</h1>
+        }
       </header>
       <main>
         $main
