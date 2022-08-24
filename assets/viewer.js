@@ -13,7 +13,9 @@ function onMouseOver(e) {
   } else if (par) {
     if (paragraphMenuElement.timeout) clearTimeout(paragraphMenuElement.timeout)
     par.appendChild(paragraphMenuElement)
+    par.style.position = 'relative'
     paragraphMenuElement.style.position = 'absolute'
+    paragraphMenuElement.style.left = '1rem'
     paragraphMenuElement.style.borderTopLeftRadius = '0'
     paragraphMenuElement.style.borderTopRightRadius = '0'
   }
@@ -25,6 +27,7 @@ function onMouseOut(e) {
     if (paragraphMenuElement.timeout) clearTimeout(paragraphMenuElement.timeout)
     paragraphMenuElement.timeout = setTimeout(() => {
       paragraphMenuElement.timeout = undefined
+      paragraphMenuElement.parentElement.style.position = undefined
       paragraphMenuElement.remove()
     }, 1000)
   }

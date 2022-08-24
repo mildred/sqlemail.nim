@@ -75,6 +75,14 @@ proc migrate*(db: var Database): bool =
           );
         """)
         db.exec("""
+          CREATE TABLE IF NOT EXISTS subjects (
+            id          INTEGER PRIMARY KEY,
+            guid        TEXT NOT NULL,
+            name        TEXT NOT NULL,
+            CONSTRAINT guid_unique UNIQUE (guid)
+          );
+        """)
+        db.exec("""
           CREATE TABLE IF NOT EXISTS types (
             type        TEXT PRIMARY KEY NOT NULL
           );
@@ -82,16 +90,14 @@ proc migrate*(db: var Database): bool =
         db.exec("""
           INSERT INTO types (type) VALUES ('subject'), ('article'), ('paragraph');
         """)
-        TODO: replace name with reply_guid and add a table topics with the same and a guid associated with that name that can join with the reply_guid here. Allow replies to reply to a paragraph in the context of a specific article / subject. (do not show comments in identical paragraphs of unrelated articles)
         db.exec("""
           CREATE TABLE IF NOT EXISTS articles (
             id          INTEGER PRIMARY KEY NOT NULL,
             patch_id    INTEGER NOT NULL,
             user_id     INTEGER NOT NULL,
-            name        TEXT,
             reply_guid  TEXT NOT NULL,
-            reply_index INTEGER DEFAULT 0,
             reply_type  TEXT NOT NULL,
+            reply_index INTEGER DEFAULT 0,
             timestamp   REAL NOT NULL DEFAULT (julianday('now')),
             FOREIGN KEY (reply_type) REFERENCES types (type),
             FOREIGN KEY (patch_id) REFERENCES patches (id),

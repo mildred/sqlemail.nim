@@ -83,6 +83,7 @@ nav {
 .hmenu button {
   font-weight: normal;
   vertical-align: top;
+  font-size: inherit;
 }
 .hmenu button:not(.is-active) {
   background-color: unset;

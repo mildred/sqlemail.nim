@@ -4,3 +4,6 @@
 .viewer [id^="paragraph-"]:hover {
   border-color: var(--color-bgui);
 }
+.viewer .hmenu {
+  font-size: 0.75rem;
+}

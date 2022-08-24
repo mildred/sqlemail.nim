@@ -56,7 +56,7 @@ proc update*(ctx: Context) {.async, gcsafe.} =
 
   let name = ctx.getPathParams("name", "")
   var article: Article
-  article.name = name
+  article.subject_name = name
   article.user_id = current_user.get.id
   article.from_html(html.get)
 
