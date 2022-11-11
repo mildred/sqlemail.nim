@@ -85,17 +85,17 @@ CREATE TABLE articles (
             reply_guid          TEXT NOT NULL,          -- object guid being replied to
             reply_type          TEXT NOT NULL,          -- object type (types)
             reply_index         INTEGER DEFAULT 0,      -- unsure: paragraph replied to
-            reply_private       BOOLEAN NOT NULL,       -- is the reply private to the group
 
             -- author of the message
+            -- the message is not published here, the group is only used to keep track of the author
             author_group_id     INTEGER NOT NULL,       -- author personal group
             author_group_guid   TEXT NOT NULL,
             author_member_id    INTEGER,                -- member local_id (optional)
 
             -- group the article belongs to (can be same as author_group)
+            -- where the message is published. If the group is public (others readable) the reply is readable to anyone who has access to the original item
             group_id            INTEGER NOT NULL,
             group_guid          TEXT NOT NULL,
-            group_private       BOOLEAN NOT NULL,       -- cannot be seen outside of group
             group_member_id     INTEGER,                -- local_id of member (NULL if other)
 
             initial_score       REAL NOT NULL DEFAULT 1.0,
@@ -115,6 +115,8 @@ CREATE TABLE group_items (
             root_guid                TEXT NOT NULL,             -- group root item
             parent_id                INTEGER DEFAULT NULL,      -- group parent item
             parent_guid              TEXT DEFAULT NULL,
+            child_id                 INTEGER DEFAULT NULL,      -- child group item (if any)
+            name                     TEXT NOT NULL,             -- group name
             seed_userdata            TEXT NOT NULL DEFAULT '',  -- seed for unique guid
             others_members_weight    REAL DEFAULT 0,            -- weight of unlisted members
             others_members_readable  BOOLEAN NOT NULL DEFAULT FALSE, -- world-readable
