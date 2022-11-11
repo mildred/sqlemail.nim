@@ -47,6 +47,7 @@ Roadmap
 - [x] Basic page creation
 - [ ] Basic page viewing
 - [x] Basic group creation
+- [ ] UI to create default user groups: "Create public|private identity"
 - [ ] Basic display of group
 - [ ] Basic posting articles to a group
 - [ ] Ability to join groups by their guid

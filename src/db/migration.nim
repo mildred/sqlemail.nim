@@ -13,13 +13,6 @@ PRAGMA user_version = 5""", """
 CREATE TABLE users (
             id            INTEGER PRIMARY KEY NOT NULL
           )""", """
-CREATE TABLE user_pods (
-            user_id       INTEGER NOT NULL,
-            pod_url       TEXT NOT NULL,
-            local_user_id TEXT NOT NULL,
-            PRIMARY KEY (user_id, pod_url),
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )""", """
 CREATE TABLE user_emails (
             user_id       INTEGER NOT NULL,
             email_hash    TEXT NOT NULL,
@@ -60,54 +53,6 @@ CREATE TABLE subjects (
 CREATE TABLE types (
             type        TEXT PRIMARY KEY NOT NULL
           )""", """
-CREATE TABLE group_items (
-            id                       INTEGER PRIMARY KEY NOT NULL,
-            guid                     TEXT NOT NULL,
-            root_guid                TEXT NOT NULL,
-            parent_id                INTEGER DEFAULT NULL,
-            parent_guid              TEXT DEFAULT NULL,
-            seed_userdata            TEXT NOT NULL DEFAULT '',
-            others_members_weight    REAL DEFAULT 0,
-            moderation_default_score REAL DEFAULT 0,
-            FOREIGN KEY (root_guid) REFERENCES group_items (guid),
-            FOREIGN KEY (parent_guid) REFERENCES group_items (guid),
-            FOREIGN KEY (parent_id) REFERENCES group_items (id),
-            CONSTRAINT guid_unique UNIQUE (guid)
-          )""", """
-CREATE TABLE articles (
-            id                  INTEGER PRIMARY KEY NOT NULL,
-            patch_id            INTEGER NOT NULL,
-            user_id             INTEGER NOT NULL,
-            reply_guid          TEXT NOT NULL,
-            reply_type          TEXT NOT NULL,
-            reply_index         INTEGER DEFAULT 0,
-            reply_private       BOOLEAN NOT NULL,
-            group_id            INTEGER NOT NULL,
-            group_guid          TEXT NOT NULL,
-            group_private       BOOLEAN NOT NULL,
-            group_member_id     INTEGER NOT NULL,
-            initial_score       REAL NOT NULL DEFAULT 1.0,
-            timestamp           REAL NOT NULL DEFAULT (julianday('now')),
-            FOREIGN KEY (reply_type) REFERENCES types (type),
-            FOREIGN KEY (patch_id) REFERENCES patches (id),
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (group_id) REFERENCES group_items (id),
-            FOREIGN KEY (group_guid) REFERENCES group_items (guid)
-          )""", """
-CREATE TABLE group_members (
-            id                 INTEGER PRIMARY KEY NOT NULL,
-            local_id           INTEGER NOT NULL,
-            obsolete           BOOLEAN DEFAULT FALSE,
-            obsoleted_by       INTEGER DEFAULT NULL,
-            group_item_id      INTEGER NOT NULL,
-            nickname           TEXT,
-            weight             REAL NOT NULL DEFAULT 1,
-            user_id            INTEGER,
-            CONSTRAINT local_id_unique UNIQUE (local_id, group_item_id),
-            FOREIGN KEY (obsoleted_by) REFERENCES group_members (id),
-            FOREIGN KEY (group_item_id) REFERENCES group_items (id),
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )""", """
 CREATE TABLE group_member_items (
             id                 INTEGER PRIMARY KEY NOT NULL,
             group_member_id    INTEGER NOT NULL,
@@ -130,6 +75,77 @@ CREATE TABLE moderations (
             FOREIGN KEY (article_id) REFERENCES articles (id),
             FOREIGN KEY (group_guid) REFERENCES group_items (guid),
             FOREIGN KEY (article_guid) REFERENCES articles (guid)
+          )""", """
+CREATE TABLE articles (
+            id                  INTEGER PRIMARY KEY NOT NULL,
+            patch_id            INTEGER NOT NULL,
+            user_id             INTEGER NOT NULL,
+
+            -- the item replying to, may be NULL
+            reply_guid          TEXT NOT NULL,          -- object guid being replied to
+            reply_type          TEXT NOT NULL,          -- object type (types)
+            reply_index         INTEGER DEFAULT 0,      -- unsure: paragraph replied to
+            reply_private       BOOLEAN NOT NULL,       -- is the reply private to the group
+
+            -- author of the message
+            author_group_id     INTEGER NOT NULL,       -- author personal group
+            author_group_guid   TEXT NOT NULL,
+            author_member_id    INTEGER,                -- member local_id (optional)
+
+            -- group the article belongs to (can be same as author_group)
+            group_id            INTEGER NOT NULL,
+            group_guid          TEXT NOT NULL,
+            group_private       BOOLEAN NOT NULL,       -- cannot be seen outside of group
+            group_member_id     INTEGER,                -- local_id of member (NULL if other)
+
+            initial_score       REAL NOT NULL DEFAULT 1.0,
+            timestamp           REAL NOT NULL DEFAULT (julianday('now')),
+
+            FOREIGN KEY (reply_type) REFERENCES types (type),
+            FOREIGN KEY (patch_id) REFERENCES patches (id),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (author_group_id) REFERENCES group_items (id),
+            FOREIGN KEY (author_group_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (group_id) REFERENCES group_items (id),
+            FOREIGN KEY (group_guid) REFERENCES group_items (guid)
+          )""", """
+CREATE TABLE group_items (
+            id                       INTEGER PRIMARY KEY NOT NULL,
+            guid                     TEXT NOT NULL,
+            root_guid                TEXT NOT NULL,             -- group root item
+            parent_id                INTEGER DEFAULT NULL,      -- group parent item
+            parent_guid              TEXT DEFAULT NULL,
+            seed_userdata            TEXT NOT NULL DEFAULT '',  -- seed for unique guid
+            others_members_weight    REAL DEFAULT 0,            -- weight of unlisted members
+            others_members_readable  BOOLEAN NOT NULL DEFAULT FALSE, -- world-readable
+            moderation_default_score REAL DEFAULT 0,            -- score for unlisted member's articles
+
+            FOREIGN KEY (root_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_id) REFERENCES group_items (id),
+            CONSTRAINT guid_unique UNIQUE (guid)
+          )""", """
+CREATE TABLE group_members (
+            id                 INTEGER PRIMARY KEY NOT NULL,
+            local_id           INTEGER NOT NULL,        -- unique id within the group
+            obsolete           BOOLEAN DEFAULT FALSE,   -- is the member obsolete (private data to pod)
+            obsoleted_by       INTEGER DEFAULT NULL,    -- id that makes it obsolete (NULL: removed member)
+            group_item_id      INTEGER NOT NULL,        -- group the member belongs to
+            nickname           TEXT,                    -- member nickname
+            weight             REAL NOT NULL DEFAULT 1, -- member weight within group
+            user_id            INTEGER,                 -- user id for instance
+
+            CONSTRAINT local_id_unique UNIQUE (local_id, group_item_id),
+            FOREIGN KEY (obsoleted_by) REFERENCES group_members (id),
+            FOREIGN KEY (group_item_id) REFERENCES group_items (id),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+          )""", """
+CREATE TABLE user_pods (
+            id            INTEGER PRIMARY KEY NOT NULL,
+            user_id       INTEGER NOT NULL,
+            pod_url       TEXT NOT NULL,        -- public pod URL
+            local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
+            FOREIGN KEY (user_id) REFERENCES users (id)
           )"""]
 
 iterator table_schema_sql(): tuple[sql: string] {.importdb: "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL".} = discard
@@ -284,47 +300,94 @@ proc migrate*(db: var Database): bool =
             id                  INTEGER PRIMARY KEY NOT NULL,
             patch_id            INTEGER NOT NULL,
             user_id             INTEGER NOT NULL,
-            reply_guid          TEXT NOT NULL,
-            reply_type          TEXT NOT NULL,
-            reply_index         INTEGER DEFAULT 0,
-            reply_private       BOOLEAN NOT NULL,
+
+            -- the item replying to, may be NULL
+            reply_guid          TEXT NOT NULL,          -- object guid being replied to
+            reply_type          TEXT NOT NULL,          -- object type (types)
+            reply_index         INTEGER DEFAULT 0,      -- unsure: paragraph replied to
+
+            -- author of the message
+            -- the message is not published here, the group is only used to keep track of the author
+            author_group_id     INTEGER NOT NULL,       -- author personal group
+            author_group_guid   TEXT NOT NULL,
+            author_member_id    INTEGER,                -- member local_id (optional)
+
+            -- group the article belongs to (can be same as author_group)
+            -- where the message is published. If the group is public (others readable) the reply is readable to anyone who has access to the original item
             group_id            INTEGER NOT NULL,
             group_guid          TEXT NOT NULL,
-            group_private       BOOLEAN NOT NULL,
-            group_member_id     INTEGER NOT NULL,
+            group_member_id     INTEGER,                -- local_id of member (NULL if other)
+
             initial_score       REAL NOT NULL DEFAULT 1.0,
             timestamp           REAL NOT NULL DEFAULT (julianday('now')),
+
             FOREIGN KEY (reply_type) REFERENCES types (type),
             FOREIGN KEY (patch_id) REFERENCES patches (id),
             FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (author_group_id) REFERENCES group_items (id),
+            FOREIGN KEY (author_group_guid) REFERENCES group_items (guid),
             FOREIGN KEY (group_id) REFERENCES group_items (id),
             FOREIGN KEY (group_guid) REFERENCES group_items (guid)
+          );
+        """)
+        db.exec("DROP TABLE group_items")
+        db.exec("""
+          CREATE TABLE IF NOT EXISTS group_items (
+            id                       INTEGER PRIMARY KEY NOT NULL,
+            guid                     TEXT NOT NULL,
+            root_guid                TEXT NOT NULL,             -- group root item
+            parent_id                INTEGER DEFAULT NULL,      -- group parent item
+            parent_guid              TEXT DEFAULT NULL,
+            child_id                 INTEGER DEFAULT NULL,      -- child group item (if any)
+            name                     TEXT NOT NULL,             -- group name
+            seed_userdata            TEXT NOT NULL DEFAULT '',  -- seed for unique guid
+            others_members_weight    REAL DEFAULT 0,            -- weight of unlisted members
+            others_members_readable  BOOLEAN NOT NULL DEFAULT FALSE, -- world-readable
+            moderation_default_score REAL DEFAULT 0,            -- score for unlisted member's articles
+
+            FOREIGN KEY (root_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (parent_id) REFERENCES group_items (id),
+            CONSTRAINT guid_unique UNIQUE (guid)
           );
         """)
         db.exec("DROP TABLE group_members")
         db.exec("""
           CREATE TABLE IF NOT EXISTS group_members (
             id                 INTEGER PRIMARY KEY NOT NULL,
-            local_id           INTEGER NOT NULL,
-            obsolete           BOOLEAN DEFAULT FALSE,
-            obsoleted_by       INTEGER DEFAULT NULL,
-            group_item_id      INTEGER NOT NULL,
-            nickname           TEXT,
-            weight             REAL NOT NULL DEFAULT 1,
-            user_id            INTEGER,
+            local_id           INTEGER NOT NULL,        -- unique id within the group
+            obsolete           BOOLEAN DEFAULT FALSE,   -- is the member obsolete (private data to pod)
+            obsoleted_by       INTEGER DEFAULT NULL,    -- id that makes it obsolete (NULL: removed member)
+            group_item_id      INTEGER NOT NULL,        -- group the member belongs to
+            nickname           TEXT,                    -- member nickname
+            weight             REAL NOT NULL DEFAULT 1, -- member weight within group
+            user_id            INTEGER,                 -- user id for instance
+
             CONSTRAINT local_id_unique UNIQUE (local_id, group_item_id),
             FOREIGN KEY (obsoleted_by) REFERENCES group_members (id),
             FOREIGN KEY (group_item_id) REFERENCES group_items (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
           );
         """)
+        db.exec("DROP TABLE user_pods")
+        db.exec("""
+          CREATE TABLE user_pods (
+            id            INTEGER PRIMARY KEY NOT NULL,
+            user_id       INTEGER NOT NULL,
+            pod_url       TEXT NOT NULL,        -- public pod URL
+            local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
+            FOREIGN KEY (user_id) REFERENCES users (id)
+          )
+        """)
         db.exec("""
           CREATE TABLE IF NOT EXISTS group_member_items (
-            id                 INTEGER PRIMARY KEY NOT NULL,
-            group_member_id    INTEGER NOT NULL,
-            pod_url            TEXT,
-            local_user_id      TEXT,
-            FOREIGN KEY (group_member_id) REFERENCES group_members (id)
+            id                  INTEGER PRIMARY KEY NOT NULL,
+            group_member_id     INTEGER NOT NULL,
+            user_pod_id         INTEGER,
+            pod_url             TEXT,
+            local_user_id       TEXT,
+            FOREIGN KEY (group_member_id) REFERENCES group_members (id),
+            FOREIGN KEY (user_pod_id) REFERENCES user_pods (id)
           )
         """)
         db.exec("""
