@@ -4,6 +4,7 @@ import ./common
 
 func group_new*(): string = tmpli html"""
   <article>
+    New Group
     <form method="POST" action="/@/">
       <input type="text" name="seed_userdata" placeholder="seed" />
       <input type="hidden" name="others_members_weight" value="0" />

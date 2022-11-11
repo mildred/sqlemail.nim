@@ -2,28 +2,30 @@ import prologue
 
 import ./controllers/[login,articles,errors,assets,groups,home]
 
-proc ensureLoggedIn(): HandlerAsync =
+proc ensureLoggedIn*(): HandlerAsync =
   result = proc(ctx: Context) {.async.} =
-    if ctx.session["email"] == "":
-      resp redirect("/login")
+    if ctx.session.getOrDefault("email", "") == "":
+      resp redirect("/login", code = Http303)
+    else:
+      await switch(ctx)
 
 proc init_routes*(app: Prologue) =
-  app.addRoute("/", home.index, HttpGet)
+  app.addRoute("/", home.index, HttpGet, middlewares = @[ensureLoggedIn()])
   app.addRoute("/logout", login.get_logout, HttpGet)
   app.addRoute("/logout", login.post_logout, HttpPost)
   app.addRoute("/login", login.get, HttpGet)
   app.addRoute("/login", login.post, HttpPost)
   app.addRoute("/login/{email}", login.get, HttpGet)
   app.addRoute("/login/{email}/{code}", login.get, HttpGet)
-  app.addRoute(re"^/@/$", groups.create, HttpPost)
-  #app.addRoute(re"^/@(?P<num>[^/]+)/$", groups.show, HttpPost)
-  app.addRoute("/~{userguid}/", articles.index, HttpGet)
-  app.addRoute("/~{userguid}/", articles.create, HttpPost)
-  app.addRoute("/~{userguid}/{name}/", articles.show, HttpGet)
-  app.addRoute("/~{userguid}/{name}/", articles.update, HttpPost)
-  app.addRoute("/~{userguid}/{name}/edit", articles.edit, HttpGet)
-  app.addRoute("/~{userguid}/{name}/.json", articles.get_json, HttpGet)
-  app.addRoute("/~{userguid}/{name}/.html", articles.get_html, HttpGet)
+  app.addRoute(re"^/(g|@)/$", groups.create, HttpPost, middlewares = @[ensureLoggedIn()])
+  #app.addRoute(re"^/(g:|@)(?P<num>[^/]+)/$", groups.show, HttpPost, middlewares = @[ensureLoggedIn()])
+  app.addRoute(re"^/(u:|~)(?P<userguid>[^/]+)/$", articles.index, HttpGet, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/", articles.create, HttpPost, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/{name}/", articles.show, HttpGet, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/{name}/", articles.update, HttpPost, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/{name}/edit", articles.edit, HttpGet, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/{name}/.json", articles.get_json, HttpGet, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/~{userguid}/{name}/.html", articles.get_html, HttpGet, middlewares = @[ensureLoggedIn()])
   app.addRoute("/assets/{path}$", assets.get, HttpGet)
   app.registerErrorHandler(Http404, go404)
 
