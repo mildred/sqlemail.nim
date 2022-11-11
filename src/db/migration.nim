@@ -9,7 +9,7 @@ proc set_user_version*(db: var Database, v: int) =
   discard db.exec(&"PRAGMA user_version = {$v}")
 
 const schema = @["""
-PRAGMA user_version = 4""", """
+PRAGMA user_version = 5""", """
 CREATE TABLE users (
             id            INTEGER PRIMARY KEY NOT NULL
           )""", """
@@ -60,18 +60,6 @@ CREATE TABLE subjects (
 CREATE TABLE types (
             type        TEXT PRIMARY KEY NOT NULL
           )""", """
-CREATE TABLE articles (
-            id          INTEGER PRIMARY KEY NOT NULL,
-            patch_id    INTEGER NOT NULL,
-            user_id     INTEGER NOT NULL,
-            reply_guid  TEXT NOT NULL,
-            reply_type  TEXT NOT NULL,
-            reply_index INTEGER DEFAULT 0,
-            timestamp   REAL NOT NULL DEFAULT (julianday('now')),
-            FOREIGN KEY (reply_type) REFERENCES types (type),
-            FOREIGN KEY (patch_id) REFERENCES patches (id),
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )""", """
 CREATE TABLE group_items (
             id                       INTEGER PRIMARY KEY NOT NULL,
             guid                     TEXT NOT NULL,
@@ -86,18 +74,62 @@ CREATE TABLE group_items (
             FOREIGN KEY (parent_id) REFERENCES group_items (id),
             CONSTRAINT guid_unique UNIQUE (guid)
           )""", """
+CREATE TABLE articles (
+            id                  INTEGER PRIMARY KEY NOT NULL,
+            patch_id            INTEGER NOT NULL,
+            user_id             INTEGER NOT NULL,
+            reply_guid          TEXT NOT NULL,
+            reply_type          TEXT NOT NULL,
+            reply_index         INTEGER DEFAULT 0,
+            reply_private       BOOLEAN NOT NULL,
+            group_id            INTEGER NOT NULL,
+            group_guid          TEXT NOT NULL,
+            group_private       BOOLEAN NOT NULL,
+            group_member_id     INTEGER NOT NULL,
+            initial_score       REAL NOT NULL DEFAULT 1.0,
+            timestamp           REAL NOT NULL DEFAULT (julianday('now')),
+            FOREIGN KEY (reply_type) REFERENCES types (type),
+            FOREIGN KEY (patch_id) REFERENCES patches (id),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (group_id) REFERENCES group_items (id),
+            FOREIGN KEY (group_guid) REFERENCES group_items (guid)
+          )""", """
 CREATE TABLE group_members (
             id                 INTEGER PRIMARY KEY NOT NULL,
+            local_id           INTEGER NOT NULL,
+            obsolete           BOOLEAN DEFAULT FALSE,
             obsoleted_by       INTEGER DEFAULT NULL,
             group_item_id      INTEGER NOT NULL,
             nickname           TEXT,
             weight             REAL NOT NULL DEFAULT 1,
-            pod_url            TEXT,
-            local_user_id      TEXT,
             user_id            INTEGER,
+            CONSTRAINT local_id_unique UNIQUE (local_id, group_item_id),
             FOREIGN KEY (obsoleted_by) REFERENCES group_members (id),
             FOREIGN KEY (group_item_id) REFERENCES group_items (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
+          )""", """
+CREATE TABLE group_member_items (
+            id                 INTEGER PRIMARY KEY NOT NULL,
+            group_member_id    INTEGER NOT NULL,
+            pod_url            TEXT,
+            local_user_id      TEXT,
+            FOREIGN KEY (group_member_id) REFERENCES group_members (id)
+          )""", """
+CREATE TABLE moderations (
+            id                          INTEGER PRIMARY KEY NOT NULL,
+            group_id                    INTEGER NOT NULL,
+            member_id                   INTEGER NOT NULL,
+            article_id                  INTEGER NOT NULL,
+            group_guid                  TEXT NOT NULL,
+            member_pod_url              TEXT NOT NULL,
+            member_local_user_id        TEXT NOT NULL,
+            article_guid                TEXT NOT NULL,
+            score                       REAL NOT NULL,
+            FOREIGN KEY (group_id) REFERENCES group_items (id),
+            FOREIGN KEY (member_id) REFERENCES group_members (id),
+            FOREIGN KEY (article_id) REFERENCES articles (id),
+            FOREIGN KEY (group_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (article_guid) REFERENCES articles (guid)
           )"""]
 
 iterator table_schema_sql(): tuple[sql: string] {.importdb: "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL".} = discard
