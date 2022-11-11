@@ -39,7 +39,9 @@ type
     totp_url: string
     valid: bool
   UserPod* = tuple
+    id: int
     pod_url: string
+    local_user_id: string
   User* = tuple
     id:     int
     emails: seq[UserEmail]
@@ -66,8 +68,8 @@ proc get_user_id(email_hash: string): Option[tuple[user_id: int]] {.importdb: ""
   SELECT user_id FROM user_emails WHERE email_hash = $email_hash
 """ .}
 
-iterator get_pods(user_id: int): tuple[pod_url: string] {.importdb: """
-  SELECT pod_url from user_pods WHERE user_id = $user_id
+iterator get_pods(user_id: int): tuple[id: int, pod_url: string, local_user_id: string] {.importdb: """
+  SELECT id, pod_url, local_user_id from user_pods WHERE user_id = $user_id
 """.} = discard
 
 iterator get_emails(user_id: int): tuple[email_hash: string, totp_url: string, valid: bool] {.importdb: """

@@ -119,7 +119,10 @@ CREATE TABLE group_items (
             name                     TEXT NOT NULL,             -- group name
             seed_userdata            TEXT NOT NULL DEFAULT '',  -- seed for unique guid
             others_members_weight    REAL DEFAULT 0,            -- weight of unlisted members
-            others_members_readable  BOOLEAN NOT NULL DEFAULT FALSE, -- world-readable
+            group_type               INTEGER NOT NULL,
+                        -- 0: private, only listed members can read
+                        -- 1: private, anyone can be invited with link
+                        -- 3: public, anyone can read and group is discoverable
             moderation_default_score REAL DEFAULT 0,            -- score for unlisted member's articles
 
             FOREIGN KEY (root_guid) REFERENCES group_items (guid),
@@ -344,7 +347,10 @@ proc migrate*(db: var Database): bool =
             name                     TEXT NOT NULL,             -- group name
             seed_userdata            TEXT NOT NULL DEFAULT '',  -- seed for unique guid
             others_members_weight    REAL DEFAULT 0,            -- weight of unlisted members
-            others_members_readable  BOOLEAN NOT NULL DEFAULT FALSE, -- world-readable
+            group_type               INTEGER NOT NULL,
+                        -- 0: private, only listed members can read
+                        -- 1: private, anyone can be invited with link
+                        -- 3: public, anyone can read and group is discoverable
             moderation_default_score REAL DEFAULT 0,            -- score for unlisted member's articles
 
             FOREIGN KEY (root_guid) REFERENCES group_items (guid),

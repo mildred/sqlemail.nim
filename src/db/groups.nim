@@ -26,10 +26,10 @@ type
     root_guid: string
     parent_id: int
     parent_guid: string
+    group_type: int
     name: string
     seed_userdata: string
     others_members_weight: float
-    others_members_readable: bool
     moderation_default_score: float
     members: seq[GroupMember]
 
@@ -60,9 +60,9 @@ proc to_json_node*(gi: GroupItem): JsonNode =
   result = %*{
     "t": "group-item",
     "n": gi.name,
+    "gt": gi.group_type,
     "ud": gi.seed_userdata,
     "ow": gi.others_members_weight,
-    "or": gi.others_members_readable,
     "s": gi.moderation_default_score,
     "m": gi.members.to_json_node()
   }
@@ -77,14 +77,14 @@ proc compute_hash*(obj: GroupItem): string =
 proc compute_new*(gi: var GroupItem) =
   gi.guid = gi.compute_hash()
 
-proc insert_group_item(guid, name, seed_userdata: string, others_members_weight: float, others_members_readable: bool, moderation_default_score: float) {.importdb: """
-  INSERT INTO group_items (guid, root_guid, name, seed_userdata, others_members_weight, others_members_readable, moderation_default_score)
-  VALUES ($guid, $guid, $name, $seed_userdata, $others_members_weight, $others_members_readable, $moderation_default_score)
+proc insert_group_item(guid, name, seed_userdata: string, group_type: int, others_members_weight: float, moderation_default_score: float) {.importdb: """
+  INSERT INTO group_items (guid, root_guid, name, seed_userdata, group_type, others_members_weight, moderation_default_score)
+  VALUES ($guid, $guid, $name, $seed_userdata, $group_type, $others_members_weight, $moderation_default_score)
   ON CONFLICT DO NOTHING
 """.}
 
 proc save_new*(db: var Database, gi: GroupItem) =
   assert(gi.guid != "")
   assert(gi.members.len == 0, "not yet implemented")
-  db.insert_group_item(gi.guid, gi.name, gi.seed_userdata, gi.others_members_weight, gi.others_members_readable, gi.moderation_default_score)
+  db.insert_group_item(gi.guid, gi.name, gi.seed_userdata, gi.group_type, gi.others_members_weight, gi.moderation_default_score)
 
