@@ -85,6 +85,6 @@ proc insert_group_item(guid, name, seed_userdata: string, group_type: int, other
 
 proc save_new*(db: var Database, gi: GroupItem) =
   assert(gi.guid != "")
-  assert(gi.members.len == 0, "not yet implemented")
+  assert(gi.members.len == 0, "group members not yet implemented")
   db.insert_group_item(gi.guid, gi.name, gi.seed_userdata, gi.group_type, gi.others_members_weight, gi.moderation_default_score)
 

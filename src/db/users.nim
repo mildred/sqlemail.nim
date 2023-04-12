@@ -5,7 +5,7 @@ import std/times
 import easy_sqlite3
 import nauthy
 
-func hash_email*(email: string): string =
+proc hash_email*(email: string): string =
   #result = $sha1.secureHash(email)
   #result = get_md5(email)
 

@@ -4,7 +4,7 @@ import prologue
 import ./common
 import ../context
 
-func layout*(ctx: Context, main: string, title: string = ""): string = tmpli html"""
+proc layout*(ctx: Context, main: string, title: string = ""): string = tmpli html"""
   <html>
     <head>
       <title>$(h(title)) - Accounts</title>

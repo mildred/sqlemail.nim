@@ -3,7 +3,7 @@ import std/strformat
 import std/options
 import std/cgi
 import std/times
-import std/smtp
+import smtp
 import nauthy
 
 import ../utils/parse_port

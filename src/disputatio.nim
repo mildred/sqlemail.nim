@@ -2,8 +2,6 @@ import prologue
 import prologue/middlewares/sessions/signedcookiesession
 from prologue/core/urandom import random_string
 
-import docopt
-
 import ./db/migration
 import ./utils/parse_port
 import ./routes
@@ -12,9 +10,7 @@ import ./context
 const version {.strdefine.}: string = "(no version information)"
 
 const doc = ("""
-Nimnews is a simple newsgroup NNTP server
-
-Usage: nimnews [options]
+Usage: disputatio [options]
 
 Options:
   -h, --help            Print help
@@ -34,36 +30,58 @@ Version: {version}
 
 
 when isMainModule:
-  let args = docopt(doc)
+  let settings = newSettings(address = "localhost", port = Port(8080))
+  let secretkey = ""
+  let dbfile = "./disputatio.sqlite"
+  let assets = "./assets/"
+  let smtp = ""
+  let sender = ""
 
-  if args["--version"]:
-    echo version
-    when defined(version):
-      quit(0)
-    else:
-      quit(1)
+  const shortNoVal = {'h'}
+  const longNoVal = @["help", "version"]
 
-  let
-    arg_fd               = parse_sd_socket_activation($args["--listen"])
-    (arg_addr, arg_port) = parse_addr_and_port($args["--listen"], 8080)
+  for kind, key, val in getopt(shortNoVal = shortNoVal, longNoVal = longNoVal):
+    case kind
+    of cmdArgument:
+      discard
+    of cmdLongOption, cmdShortOption:
+      case key
+      of "listen":
+        let arg_fd               = parse_sd_socket_activation(val)
+        let (arg_addr, arg_port) = parse_addr_and_port(val, 8080)
 
-  var secretkey = $args["--secretkey"]
-  if secretkey == "":
+        if arg_fd != -1:
+          echo "Unsupported systemd socket activation of file descriptor inheritance"
+          echo "See: <https://github.com/ringabout/httpx/issues/12>"
+          quit(1)
+
+        settings.address = arg_addr
+        settings.port = arg_port
+      of "secretkey": secretkey = val
+      of "db":     dbfile = val
+      of "assets": assets = val
+      of "smtp":   smtp = val
+      of "sender": sender = val
+      of "help", "h":
+        echo doc
+        quit()
+      of "version":
+        echo version
+        when defined(version):
+          quit(0)
+        else:
+          quit(1)
+    of cmdEnd: assert(false) # cannot happen
+
+  if secretkey.len == 0:
     secretkey = random_string(8)
+  settings.secretkey = secretkey
 
-  if arg_fd != -1:
-    echo "Unsupported systemd socket activation of file descriptor inheritance"
-    echo "See: <https://github.com/ringabout/httpx/issues/12>"
-    quit(1)
-
-  let db = open_database($args["--db"])
+  let db = open_database(dbfile)
   discard db
 
-  let settings = newSettings(address = arg_addr, port = arg_port, secret_key = secret_key)
   var app = newApp(settings)
-  app.use(contextMiddleware($args["--db"], $args["--assets"],
-                            if args["--smtp"]:   $args["--smtp"]   else: "",
-                            if args["--sender"]: $args["--sender"] else: ""))
+  app.use(contextMiddleware(dbfile, assets, smtp, sender))
   app.use(sessionMiddleware(settings))
   init_routes(app)
   app.run(AppContext)

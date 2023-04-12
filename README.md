@@ -41,8 +41,9 @@ Roadmap
 - TODO: serialize user id in article using the unique member id of the
   moderation group the article belongs to
 
-### Sort Term ###
+### Short Term ###
 
+- [ ] Investigate using Mummy rather than Prologue
 - [x] Basic log-in via OTP (auth app or e-mail)
 - [x] Basic page creation
 - [ ] Basic page viewing
@@ -140,8 +141,19 @@ their parent object.
   possibly linked to a reply source. The content is the associated patch. The
   reply source can be of different types (subject, article, paragraph)
 
-  TODO: add a `private` boolean indicating that the article can only be accessed
-  from a group (the group vote object).
+  The author of an article is a group or a member of a group. No matter the
+  group type. The group name and the member nickname is used to display the
+  author name.
+
+  The article is published in a group as a member of that group (optional if it
+  is an open group). If the group is private, the message can only be seen to
+  the closed members of that group. If the group is unlisted, the messages can
+  only be seen by those who have the id of the group. If the group is public,
+  the message can be seen also by fetching the public replies of the object the
+  article responds to.
+
+  An article has an initial score set to 1 but the author can lower it to make
+  the post invisible by default.
 
 - patch: a list of ordered paragraphs. The patch can have a parent patch where
   it takes its content from (source control) and a list of items which are
@@ -170,14 +182,13 @@ their parent object.
   to ensure that the group cannot be hijacked. The seed userdata is there to
   generate unique group ids
 
-  TODO: add the ability to make the group public by linking it to a subject from
-  the very beginning.
+  Groups can be private, unlisted or public. Guests can post to unlisted or
+  public groups and their messages can have a default weight making them visible
+  without mederatio nfrom the group.
 
-- group members: a group member linked to a user (globaly defined as their pod
-  URL and their local user id within the pod). The user has a nickname within
-  the group and if two members have the same nickname they are considered to be
-  the same user (but with different accounts). The member also has a weight used
-  in moderation algorithms.
+- group members: a group member has a local id for the scope of the group and an
+  updatable nickname. It also has a weight defining the score of the articles
+  posted. A member has a list of identities (pair of pod URL and local user id)
 
   TODO: add a boolean to tell if the member allows the group to be considered
   public. If all members agree with that then the group is made public with the
@@ -190,8 +201,10 @@ their parent object.
   is the sum of all individual weighted votes. if the total weighted vote is
   positive, the content is shown.
 
-  The number in the vote object must be positive, it allows open groups to
-  include members with negative weights to implement blacklist in public groups.
+  Members of groups can only vote if their weight is >= 0. Their vote is
+  multiplied by their weight. Effectively giving a negative weight to a member
+  is blacklisting and a 0 weight is greylisting. Negative votes will bring the
+  articles scores down and positive votes will bring the articles scores up.
 
   TODO: add features to a vote in a group. A `pin` vote will pin the message at
   the top, a `title` / `description` feature will change the group title or
@@ -200,6 +213,20 @@ their parent object.
   TODO: If the vote is performed to a subject and not an article, it publishes
   the group with the subject name and makes it public. This is a special vote
   and all members of the group must vote to make the group public.
+
+  The computed score of an article is computed by:
+  - take the group moderation default score
+  - add each vote of the group members:
+      - all group member votes are added together and capped -1..+1
+      - the member votes (-1..+1) is multiplied by the member weight
+      - if the member weight is <= 0, the vote is not counted
+
+  TODO: remove the article initial score
+
+  The vote applies to an article paragraph if a paragraph_rank is specified.
+
+  TODO: is it relevant to apply a vote to a paragraph outside of the context of
+  an article?
 
 Moderation algorithms
 ---------------------
