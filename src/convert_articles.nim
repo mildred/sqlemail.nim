@@ -52,7 +52,7 @@ proc html_close_open_style(parts: var seq[string], last_style, style: Style, ope
     parts.add(">")
     i = i + 1
 
-type AfterParagraphCallback = proc(p: Paragraph): string
+type AfterParagraphCallback = proc(p: Paragraph): string {.gcsafe.}
 
 proc to_html*(article: Article, after: AfterParagraphCallback = nil): string =
   var parts: seq[string] = @[]

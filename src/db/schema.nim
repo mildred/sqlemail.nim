@@ -1,5 +1,5 @@
 const schema* = @["""
-PRAGMA user_version = 5""", """
+PRAGMA user_version = 6""", """
 CREATE TABLE users (
             id            INTEGER PRIMARY KEY NOT NULL
           )""", """
@@ -141,5 +141,18 @@ CREATE TABLE user_pods (
             pod_url       TEXT NOT NULL,        -- public pod URL
             local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
             FOREIGN KEY (user_id) REFERENCES users (id)
+          )""", """
+CREATE TABLE votes (
+            id                      INTEGER PRIMARY KEY NOT NULL,
+            guid                    TEXT NOT NULL,
+            group_id                INTEGER NOT NULL,
+            group_guid              TEXT NOT NULL,
+            member_local_user_id    INTEGER NOT NULL,
+            article_id              INTEGER NOT NULL,
+            article_guid            TEXT NOT NULL,
+            paragraph_rank          INTEGER,
+            vote                    REAL NOT NULL,
+            CONSTRAINT guid_unique UNIQUE (guid)
+            FOREIGN KEY (group_id, group_guid) REFERENCES groups (id, guid),
+            FOREIGN KEY (article_id, article_guid) REFERENCES articles (id, guid)
           )"""]
-

@@ -129,7 +129,7 @@ proc insert_article(patch_guid: string, user_id: int, subject_guid: string, auth
   RETURNING id
 """.}
 
-proc compute_hash*(obj: Subject | Paragraph | Patch): string
+proc compute_hash*(obj: Subject | Paragraph | Patch): string {.gcsafe.}
 
 proc to_json_node*(subject: Subject): JsonNode =
   result = %*{"t": "subject", "n": subject.name}
@@ -163,7 +163,7 @@ proc to_json_node*(art: Article): JsonNode =
     "gm": art.group_member_id
   }
 
-proc compute_hash*(obj: Subject | Paragraph | Patch): string =
+proc compute_hash*(obj: Subject | Paragraph | Patch): string {.gcsafe.} =
   result = obj.to_json_node().compute_hash()
 
 proc create_article*(db: var Database, art: Article, parent_patch_id: string) =

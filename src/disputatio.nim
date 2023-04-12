@@ -1,3 +1,4 @@
+import std/parseopt
 import prologue
 import prologue/middlewares/sessions/signedcookiesession
 from prologue/core/urandom import random_string
@@ -30,12 +31,13 @@ Version: {version}
 
 
 when isMainModule:
-  let settings = newSettings(address = "localhost", port = Port(8080))
-  let secretkey = ""
-  let dbfile = "./disputatio.sqlite"
-  let assets = "./assets/"
-  let smtp = ""
-  let sender = ""
+  var address = "localhost"
+  var port = Port(8080)
+  var secretkey = ""
+  var dbfile = "./disputatio.sqlite"
+  var assets = "./assets/"
+  var smtp = ""
+  var sender = ""
 
   const shortNoVal = {'h'}
   const longNoVal = @["help", "version"]
@@ -47,16 +49,14 @@ when isMainModule:
     of cmdLongOption, cmdShortOption:
       case key
       of "listen":
-        let arg_fd               = parse_sd_socket_activation(val)
-        let (arg_addr, arg_port) = parse_addr_and_port(val, 8080)
+        let arg_fd      = parse_sd_socket_activation(val)
+        (address, port) = parse_addr_and_port(val, 8080)
 
         if arg_fd != -1:
           echo "Unsupported systemd socket activation of file descriptor inheritance"
           echo "See: <https://github.com/ringabout/httpx/issues/12>"
           quit(1)
 
-        settings.address = arg_addr
-        settings.port = arg_port
       of "secretkey": secretkey = val
       of "db":     dbfile = val
       of "assets": assets = val
@@ -75,7 +75,8 @@ when isMainModule:
 
   if secretkey.len == 0:
     secretkey = random_string(8)
-  settings.secretkey = secretkey
+
+  let settings = newSettings(address = "localhost", port = Port(8080), secretkey = secretkey)
 
   let db = open_database(dbfile)
   discard db

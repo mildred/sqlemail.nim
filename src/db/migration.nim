@@ -287,7 +287,6 @@ proc migrate*(db: var Database): bool =
             paragraph_rank          INTEGER,
             vote                    REAL NOT NULL,
             CONSTRAINT guid_unique UNIQUE (guid)
-            FOREIGN KEY (reply_type) REFERENCES types (type),
             FOREIGN KEY (group_id, group_guid) REFERENCES groups (id, guid),
             FOREIGN KEY (article_id, article_guid) REFERENCES articles (id, guid)
           );
@@ -313,7 +312,7 @@ proc migrate*(db: var Database): bool =
     for str in actual_schema:
       schema_strings.add(&"\"\"\"\n{str}\"\"\"")
     let schema_str: string = schema_strings.join(", ")
-    echo &"const schema = @[{schema_str}]"
+    echo &"const schema* = @[{schema_str}]"
     return false
 
   return true

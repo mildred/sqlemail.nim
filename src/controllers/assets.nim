@@ -15,13 +15,11 @@ proc get*(ctx: Context) {.async, gcsafe.} =
   if fileExists(file_path):
     await ctx.staticFileResponse(path, assets_dir)
   else:
-    var content: string
-    try:
-      content = assets.getAsset(file_path)
-    except KeyError:
+    let content = getAsset(file_path)
+    if content.isNone():
       return ctx.go404()
 
-    let etag = get_md5(content)
+    let etag = get_md5(content.get())
 
     var ext = path.splitFile.ext
     if ext.len > 0:
@@ -35,6 +33,6 @@ proc get*(ctx: Context) {.async, gcsafe.} =
     if ctx.request.hasHeader("If-None-Match") and ctx.request.headers["If-None-Match"] == etag:
       await ctx.respond(Http304, "")
 
-    ctx.response.body = content
+    ctx.response.body = content.get()
     await ctx.respond()
 

@@ -1,19 +1,8 @@
-import tables, base64
+import options
 
-var assets: Table[string, string]
+const editor_js = staticRead("../assets/editor.js")
 
-proc getAsset*(path: string): string =
-  result = assets[path].decode()
-
-func toByteSeq(str: string): seq[byte] {.inline.} =
-  ## Copy ``string`` memory into an immutable``seq[byte]``.
-  let length = str.len
-  if length > 0:
-    result = newSeq[byte](length)
-    copyMem(result[0].unsafeAddr, str[0].unsafeAddr, length)
-
-proc getAssetToByteSeq*(path: string): seq[byte] =
-  result = toByteSeq (getAsset path)
-
-assets["assets/editor.js"] = """Y29uc29sZS5sb2coImVkaXRvci5qcyIpCg=="""
-
+proc getAsset*(file_path: string): Option[string] =
+  case file_path
+  of "assets/editor.js": return some(editor_js)
+  else: none(string)

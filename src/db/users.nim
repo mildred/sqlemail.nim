@@ -8,14 +8,15 @@ import nauthy
 proc hash_email*(email: string): string =
   #result = $sha1.secureHash(email)
   #result = get_md5(email)
-
-  var
-    c: MD5Context
-    d: MD5Digest
-  md5Init(c)
-  md5Update(c, cstring(email), len(email))
-  md5Final(c, d)
-  result = $d
+ 
+  {.cast(noSideEffect).}:
+    var
+      c: MD5Context
+      d: MD5Digest
+    md5Init(c)
+    md5Update(c, cstring(email), len(email))
+    md5Final(c, d)
+    result = $d
 
 proc gen_totp*(issuer, email: string): Totp =
   var totp = initTotp(urandom(16), b32Decode = false)
