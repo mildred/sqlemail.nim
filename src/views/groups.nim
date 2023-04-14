@@ -1,6 +1,6 @@
 import templates
 
-import ./common
+import ../db/groups
 
 func group_new*(): string = tmpli html"""
   <article>
@@ -34,4 +34,19 @@ func group_new*(): string = tmpli html"""
     </form>
   </article>
 """
+
+func group_list*(groups: seq[GroupItem]): string = tmpli html"""
+  <p>Member of $(groups.len) groups</p>
+  $if groups.len > 0 {
+    <ul>
+      $for group in groups {
+        <li>
+          <a href="/@$(group.guid)/">$(group.name)</a>
+        </li>
+      }
+    </ul>
+  }
+  $(group_new())
+"""
+
 

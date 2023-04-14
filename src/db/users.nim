@@ -77,6 +77,12 @@ iterator get_emails(user_id: int): tuple[email_hash: string, totp_url: string, v
   SELECT email_hash, totp_url, valid FROM user_emails WHERE user_id = $user_id
 """.} = discard
 
+proc ensure_user_in_pod*(user_id: int, pod_url: string, local_user_id: string) {.importdb: """
+  INSERT INTO user_pods (user_id, pod_url, local_user_id)
+  VALUES ($user_id, $pod_url, $local_user_id)
+  ON CONFLICT DO NOTHING
+""".}
+
 proc get_user*(db: var Database, email_hash: string): Option[User] =
   let user_id = db.get_user_id(email_hash)
   if user_id.is_none():
@@ -94,3 +100,4 @@ proc create_user*(db: var Database, email_hash, totp_url: string): User =
   let user_id = db.create_user_id()
   db.create_user_email(user_id.id, email_hash, totp_url, false)
   result = db.get_user(email_hash).get()
+

@@ -103,6 +103,12 @@ proc post*(ctx: Context) {.async, gcsafe.} =
     resp ctx.layout(login_form(), title = "Retry Login")
     return
 
+  var pod_url = ctx.request.url / email
+  pod_url.hostname = ctx.request.headers["host", 0]
+  pod_url.scheme = if ctx.request.secure: "https" else: "http"
+  pod_url.path = "/"
+  db[].ensure_user_in_pod(user.get().id, $pod_url, email_hash)
+
   db[].user_email_mark_valid(email_hash)
   ctx.session["email"] = email
 

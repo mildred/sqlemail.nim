@@ -135,13 +135,6 @@ CREATE TABLE group_members (
             FOREIGN KEY (group_item_id) REFERENCES group_items (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
           )""", """
-CREATE TABLE user_pods (
-            id            INTEGER PRIMARY KEY NOT NULL,
-            user_id       INTEGER NOT NULL,
-            pod_url       TEXT NOT NULL,        -- public pod URL
-            local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
-            FOREIGN KEY (user_id) REFERENCES users (id)
-          )""", """
 CREATE TABLE votes (
             id                      INTEGER PRIMARY KEY NOT NULL,
             guid                    TEXT NOT NULL,
@@ -155,4 +148,13 @@ CREATE TABLE votes (
             CONSTRAINT guid_unique UNIQUE (guid)
             FOREIGN KEY (group_id, group_guid) REFERENCES groups (id, guid),
             FOREIGN KEY (article_id, article_guid) REFERENCES articles (id, guid)
+          )""", """
+CREATE TABLE user_pods (
+            id            INTEGER PRIMARY KEY NOT NULL,
+            user_id       INTEGER NOT NULL,
+            pod_url       TEXT NOT NULL,        -- public pod URL
+            local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
+            CONSTRAINT user_id_pod_url_unique UNIQUE (user_id, pod_url),
+            FOREIGN KEY (user_id) REFERENCES users (id)
           )"""]
+

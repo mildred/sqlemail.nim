@@ -43,10 +43,11 @@ proc migrate*(db: var Database): bool =
         """)
         db.exec("""
           CREATE TABLE IF NOT EXISTS user_pods (
+            id            INTEGER PRIMARY KEY NOT NULL,
             user_id       INTEGER NOT NULL,
-            pod_url       TEXT NOT NULL,
-            local_user_id TEXT NOT NULL,
-            PRIMARY KEY (user_id, pod_url),
+            pod_url       TEXT NOT NULL,        -- public pod URL
+            local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
+            CONSTRAINT user_id_pod_url_unique UNIQUE (user_id, pod_url),
             FOREIGN KEY (user_id) REFERENCES users (id)
           );
         """)
