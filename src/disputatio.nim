@@ -1,4 +1,6 @@
+import std/os
 import std/parseopt
+import std/strutils
 import prologue
 import prologue/middlewares/sessions/signedcookiesession
 from prologue/core/urandom import random_string
@@ -45,7 +47,8 @@ when isMainModule:
   for kind, key, val in getopt(shortNoVal = shortNoVal, longNoVal = longNoVal):
     case kind
     of cmdArgument:
-      discard
+      echo "Unknown argument " & key
+      quit(1)
     of cmdLongOption, cmdShortOption:
       case key
       of "listen":
@@ -71,10 +74,14 @@ when isMainModule:
           quit(0)
         else:
           quit(1)
+      else:
+        echo "Unknown argument: " & key & " " & val
+        quit(1)
     of cmdEnd: assert(false) # cannot happen
 
   if secretkey.len == 0:
-    secretkey = random_string(8)
+    secretkey = random_string(16).to_hex()
+    echo "Using secret key: " & secretkey
 
   let settings = newSettings(address = "localhost", port = Port(8080), secretkey = secretkey)
 

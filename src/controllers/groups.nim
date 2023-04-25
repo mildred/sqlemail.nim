@@ -1,10 +1,13 @@
 import std/strformat
+import std/strutils
 import std/parseutils
 import prologue
 
 import ../context
 import ../db/users
 import ../db/groups
+import ../views/layout
+import ../views/groups as vgroups
 
 proc create*(ctx: Context) {.async, gcsafe.} =
   let db = AppContext(ctx).db
@@ -52,3 +55,14 @@ proc create*(ctx: Context) {.async, gcsafe.} =
     db[].save_new(gi[])
     resp redirect(&"/@{gi.guid}/", code = Http303)
 
+proc show*(ctx: Context) {.async, gcsafe.} =
+  let db = AppContext(ctx).db
+  let group_guid = ctx.getPathParams("groupguid", "")
+
+  let g = db[].get_group(group_guid)
+  if g.is_none():
+    resp ctx.layout("Not Found", title = &"Group {group_guid}"), code = Http404
+    return
+
+  let gi = g.get()
+  resp ctx.layout(group_show(gi), title = &"Group {gi.name}")

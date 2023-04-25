@@ -18,7 +18,7 @@ proc init_routes*(app: Prologue) =
   app.addRoute("/login/{email}", login.get, HttpGet)
   app.addRoute("/login/{email}/{code}", login.get, HttpGet)
   app.addRoute(re"^/(g|@)/$", groups.create, HttpPost, middlewares = @[ensureLoggedIn()])
-  #app.addRoute(re"^/(g:|@)(?P<num>[^/]+)/$", groups.show, HttpPost, middlewares = @[ensureLoggedIn()])
+  app.addRoute(re"^/(g:|@)(?P<groupguid>[^/]+)/$", groups.show, HttpGet, middlewares = @[ensureLoggedIn()])
   app.addRoute(re"^/(u:|~)(?P<userguid>[^/]+)/$", articles.index, HttpGet, middlewares = @[ensureLoggedIn()])
   app.addRoute("/~{userguid}/", articles.create, HttpPost, middlewares = @[ensureLoggedIn()])
   app.addRoute("/~{userguid}/{name}/", articles.show, HttpGet, middlewares = @[ensureLoggedIn()])

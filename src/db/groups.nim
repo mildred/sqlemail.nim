@@ -1,4 +1,5 @@
 import std/json
+import std/options
 import std/algorithm
 import easy_sqlite3
 
@@ -96,6 +97,24 @@ proc insert_group_member_item(group_member_id: int, pod_url: string, local_user_
   RETURNING id
 """.}
 
+proc select_group_item_by_guid(guid: string): Option[tuple[
+    id: int,
+    guid: string,
+    root_guid: string,
+    parent_id: int,
+    parent_guid: string,
+    group_type: int,
+    name: string,
+    seed_userdata: string,
+    others_members_weight: float,
+    moderation_default_score: float
+]] {.importdb: """
+  SELECT  id, guid, root_guid, parent_id, parent_guid, group_type, name,
+          seed_userdata, others_members_weight, moderation_default_score
+  FROM    group_items
+  WHERE guid = $guid
+""".} = discard
+
 iterator select_root_group_item_by_user_id(user_id: int): tuple[
     id: int,
     guid: string,
@@ -111,11 +130,35 @@ iterator select_root_group_item_by_user_id(user_id: int): tuple[
   SELECT  id, guid, root_guid, parent_id, parent_guid, group_type, name,
           seed_userdata, others_members_weight, moderation_default_score
   FROM    group_items
-  WHERE guid = (
+  WHERE guid IN (
     SELECT root_guid
     FROM group_items gi JOIN group_members gm ON gi.id = gm.group_item_id
     WHERE NOT obsolete AND user_id = $user_id
   )
+""".} = discard
+
+iterator select_group_members(group_id: int): tuple[
+    id: int,
+    local_id: int,
+    group_item_id: int,
+    weight: float,
+    nickname: string,
+    user_id: int
+] {.importdb: """
+  SELECT id, local_id, group_item_id, weight, nickname, user_id
+  FROM group_members
+  WHERE group_item_id = $group_id
+""".} = discard
+
+iterator select_group_member_items(group_member_id: int): tuple[
+    id: int,
+    group_member_id: int,
+    pod_url: string,
+    local_user_id: string
+] {.importdb: """
+  SELECT id, group_member_id, pod_url, local_user_id
+  FROM group_member_items
+  WHERE group_member_id = $group_member_id
 """.} = discard
 
 proc save_new*(db: var Database, gi: GroupItem) =
@@ -141,3 +184,26 @@ proc list_groups_with_user*(db: var Database, user_id: int): seq[GroupItem] =
       members: @[])
     result.add(gi)
 
+proc get_group*(db: var Database, guid: string): Option[GroupItem] =
+  let gi = db.select_group_item_by_guid(guid)
+  if gi.is_none(): return none(GroupItem)
+
+  let g = gi.get()
+  var res: GroupItem = (
+      id: g.id, guid: g.guid, root_guid: g.root_guid, parent_id: g.parent_id,
+      parent_guid: g.parent_guid, group_type: g.group_type, name: g.name,
+      seed_userdata: g.seed_userdata,
+      others_members_weight: g.others_members_weight,
+      moderation_default_score: g.moderation_default_score,
+      members: @[])
+
+  for m in db.select_group_members(g.id):
+    var member: GroupMember = (
+      id: m.id, local_id: m.local_id, group_item_id: m.group_item_id,
+      weight: m.weight, nickname: m.nickname, user_id: m.user_id, items: @[])
+    for i in db.select_group_member_items(m.id):
+      let item: GroupMemberItem = i
+      member.items.add(item)
+    res.members.add(member)
+
+  return some(res)

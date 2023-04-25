@@ -97,6 +97,10 @@ Because the main focus is to have non secret discussions on the platform.
 Private discussions are only as private as their members do keep the privacy
 anyway.
 
+Also, if you don't trust your pod, it's easy to change the pod. If you don't
+trust other users' pods then this means you don't trust the other users. TODO:
+have a feature to restrict the participating pods in a private group.
+
 ### Why this moderation scheme? ###
 
 The idea is to be able to moderate content (because unmoderated content is not
