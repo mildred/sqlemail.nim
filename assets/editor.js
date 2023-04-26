@@ -76,7 +76,8 @@ saveButton.onclick = async (e) => {
   try {
     form.append("html", html)
     form.append("parent_patch", editorElement.dataset.patchId)
-    const resp = await fetch('./', {method: 'POST', body: form})
+    const url = editorElement.dataset.url
+    const resp = await fetch(url || './', {method: 'POST', body: form})
     if (resp.status < 400) {
       unsavedBanner.style.display = 'none';
     } else {

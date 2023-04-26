@@ -1,6 +1,9 @@
+import std/options
+
 import templates
 
 import ../db/groups
+import ./articles
 
 func group_new*(): string = tmpli html"""
   <article>
@@ -81,7 +84,7 @@ func group_members_show*(group: GroupItem): string = tmpli html"""
   }
 """
 
-func group_show*(group: GroupItem): string = tmpli html"""
+func group_show*(group: GroupItem, member: Option[GroupMember]): string = tmpli html"""
   <p>
   $if group.group_type == 0 {
     $if group.members.len == 1 {
@@ -141,10 +144,10 @@ func group_show*(group: GroupItem): string = tmpli html"""
 
   $(group_members_show(group))
 
-  <p>TODO: ensure that private groups (group_type==0) are not shown unless current user is a member</p>
-
   <p>TODO: show articles of group</p>
 
-  <p>TODO: add form to post to the group if authorized</p>
+  $if member.is_some() {
+    $(article_editor("", "", fullpage = false, url = "./articles/", save_btn = "Send"))
+  }
 """
 

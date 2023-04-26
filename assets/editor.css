@@ -1,4 +1,4 @@
-.editor-unsaved {
+.editor-container.fullpage .editor-unsaved {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -15,4 +15,25 @@
 body {
   /* Ensures that there is enough padding for the save banner */
   padding-bottom: 5rem;
+}
+
+.editor-container.embedded {
+  display: flex;
+  flex-flow: row nowrap;
+  gap: 1rem;
+}
+.editor-container.embedded .html-editor[name="editor"] [contenteditable] {
+  padding: 0.5rem;
+  border: solid thin black;
+  border-radius: 0.2rem;
+}
+.editor-container.embedded .editor-unsaved .unsaved-message {
+  display: none;
+}
+.editor-container.embedded article.editor {
+  flex: 1 1 auto;
+}
+.editor-container.embedded .editor-unsaved {
+  flex: 0 0 auto;
+  width: unset;
 }

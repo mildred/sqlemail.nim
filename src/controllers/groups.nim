@@ -58,11 +58,18 @@ proc create*(ctx: Context) {.async, gcsafe.} =
 proc show*(ctx: Context) {.async, gcsafe.} =
   let db = AppContext(ctx).db
   let group_guid = ctx.getPathParams("groupguid", "")
+  let current_user = db[].get_user(hash_email(ctx.session.getOrDefault("email", "")))
 
-  let g = db[].get_group(group_guid)
+  var g = db[].get_group(group_guid)
+  var member: Option[GroupMember]
+
+  if g.is_some():
+    member = g.get.find_current_user(current_user.get.id)
+    if g.get.group_type == 0 and member.is_none():
+      g = none(GroupItem)
+
   if g.is_none():
     resp ctx.layout("Not Found", title = &"Group {group_guid}"), code = Http404
     return
 
-  let gi = g.get()
-  resp ctx.layout(group_show(gi), title = &"Group {gi.name}")
+  resp ctx.layout(group_show(g.get, member), title = &"Group {g.get.name}")

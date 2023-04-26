@@ -207,3 +207,8 @@ proc get_group*(db: var Database, guid: string): Option[GroupItem] =
     res.members.add(member)
 
   return some(res)
+
+proc find_current_user*(g: GroupItem, user_id: int): Option[GroupMember] =
+  for member in g.members:
+    if member.user_id == user_id:
+      return some(member)

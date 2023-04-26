@@ -26,6 +26,21 @@ Roadmap
 
 ### Immediate TODO ###
 
+- rework how articles are working, possibly rename articles to posts:
+    - articles is a list of paragraphs
+    - articles have an author (group_guid + local_user_id)
+    - articles can be created as part of a reply (article_guid, group_guid)
+    - articles can be reposted to any group (group_guid + local_user_id)
+    - articles can have modifications with an author (parent_article_guid,
+      group_guid + local_user_id). Modification can only happen where an article
+      was already created (author) or reposted.
+    - articles are only accessible by members of the groups where an article is
+      originally posted (author), reposted, or modified
+    - any group where the article appears or is replied to should be notified
+      about reposts or modifications
+    - in the group view, it should be possible to access the public groups where
+      the article is reposted. It should be possible to access the article
+      history too.
 - articles cannot compute a guid because user id cannot be embedded (user id is
   never static)
 - TODO: link every article to a moderation group
@@ -167,6 +182,43 @@ their parent object.
   Paragraps are separated from patch items to allow deduplicating content. The
   order of a paragraph can be different but the paragraph itself can be
   identical.
+
+- post/article: this is a replacement model for articles. A post is a list of paragraphs
+  authored by some user (group_guid + local_user_id). A post is included in a
+  group by a vote (group_guid, local_user_id, vote).
+
+  If the group where the post is shown (the group in the vote object) is the
+  same as the author group, the post is shown as being authored on this group.
+  Else it is shown as being reposted from where it was authored.
+
+  The list of groups where the post has been voted is accessible from the
+  interface, except for non private groups where the current user is not part
+  of. it is possible to show those groups.
+
+  A post can reference another post it replies to. The post being replied to is
+  only accessible if from a public group or a group where the current user is a
+  member of.
+
+  A post can be modified. The modified post author group must be a group where
+  the original post appears. The modified post can only add paragraphs and must
+  preserve the original paragraphs order. Original paragraphs can be marked as
+  deleted (but must still be referenced) and other paragraphs can be marked as
+  being replaced by their sibling.
+
+  Vote to individual paragraphs can restore old paragraphs
+
+  Modified posts are only shown if the modification comes from the same user. if
+  the modification comes from a different user, a link should be shown to see
+  the modified post wiki-style. Then the post is shown full-page with comments
+  and authoring info for each individual paragraph is shown.
+
+  In the wiki-style page, modifications should be shown from all groups the user
+  has access to, but shown/hidden paragraphs should be shown depending on the
+  current group. The group becomes effectively a moderation group.
+
+  Modifications being append-only, it ensures a conflict free merge from many
+  modifications. New paragraphs should be ordered in a deterministic order
+  (guid?)
 
 - subject: a public name. Its there to be associated with articles and create a
   wiki-like application. It is to be used in the context of groups and users but
