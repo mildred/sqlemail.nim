@@ -6,7 +6,7 @@ implemented to) that allows anyone to create documents and comment to documents.
 It allows arbitrary moderation structure where anyone can follow a moderator or
 another.
 
-Wiki Features:
+Wiki Features (that was the first idea but implementation is behind):
 
 - Provides wiki features to allow creating and updating articles
 - Allow articles to be moderated by different people creating different views of
@@ -17,9 +17,14 @@ Wiki Features:
 
 Discussion features:
 
-- Allow public and private groups (no encryption is planned for now)
+- Allow public and private groups (no encryption is planned for now, but
+  the idea is that messages are only forwarded to federated pods that the
+  members of the groups are part of. Federation not yet implemented but data
+  structure, the most complicated, is ready)
 - Decentralize discussions allowing to change instances if an instance becomes
   hostile to a group, providing freedom of speech.
+- TODO: cross-post articles to multiple groups
+- TODO: full featured vote mechanism for groups and alternate moderation groups
 
 Roadmap
 -------
@@ -60,14 +65,13 @@ Roadmap
 
 ### Short Term ###
 
-- [ ] Investigate using Mummy rather than Prologue
 - [x] Basic log-in via OTP (auth app or e-mail)
 - [x] Basic page creation
 - [ ] Basic page viewing
 - [x] Basic group creation
-- [ ] UI to create default user groups: "Create public|private identity"
-- [ ] Basic display of group
-- [ ] Basic posting articles to a group
+- [x] UI to create default user groups: "Create public|private identity"
+- [x] Basic display of group
+- [x] Basic posting articles to a group
 - [ ] Ability to join groups by their guid
 - [ ] Basic display of articles in a group
 - [ ] Controls to allow group members to vote for an article in a group

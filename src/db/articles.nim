@@ -142,7 +142,7 @@ proc insert_patch_item(patch_guid, paragraph_guid: string, rank: int) {.importdb
          $rank
 """.}
 
-proc insert_article(patch_guid: string, user_id: int, subject_guid: string, author_group_id: int, author_group_guid: string, author_member_id: int, group_id: int, group_guid: string, group_member_id: int): tuple[id: int] {.importdb: """
+proc insert_article(patch_guid: string, user_id: int, subject_guid: Option[string], author_group_id: int, author_group_guid: string, author_member_id: int, group_id: int, group_guid: string, group_member_id: int): tuple[id: int] {.importdb: """
   INSERT INTO articles (patch_id, user_id, reply_guid, reply_index, author_group_id, author_group_guid, author_member_id, group_id, group_guid, group_member_id, timestamp)
   SELECT (SELECT id FROM patches WHERE guid = $patch_guid),
          $user_id, $subject_guid, NULL, $author_group_id, $author_group_guid, IIF($author_member_id < 0, NULL, $author_member_id), $group_id, $group_guid, IIF($group_member_id < 0, NULL, $group_member_id), julianday('now')
@@ -187,9 +187,11 @@ proc compute_hash*(obj: Subject | Paragraph | Patch): string {.gcsafe.} =
   result = obj.to_json_node().compute_hash()
 
 proc create_article*(db: var Database, art: Article, parent_patch_id: string): int =
-  var sub: Subject = (name: art.subject_name)
-  let subject_guid: string = sub.compute_hash()
-  db.insert_subject(subject_guid, sub.name)
+  var subject_guid: Option[string]
+  if art.subject_name != "":
+    var sub: Subject = (name: art.subject_name)
+    subject_guid = some(sub.compute_hash())
+    db.insert_subject(subject_guid.get, sub.name)
 
   var pat: Patch
   pat.parent_guid = parent_patch_id
