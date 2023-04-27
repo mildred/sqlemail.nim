@@ -3,6 +3,7 @@ import std/strutils
 import std/parseutils
 import prologue
 
+import ./errors
 import ../context
 import ../db/users
 import ../db/groups
@@ -55,7 +56,7 @@ proc create*(ctx: Context) {.async, gcsafe.} =
     db[].save_new(gi[])
     resp redirect(&"/@{gi.guid}/", code = Http303)
 
-proc show*(ctx: Context) {.async, gcsafe.} =
+proc get_group*(ctx: Context): tuple[group: Option[GroupItem], member: Option[GroupMember]] {.gcsafe.} =
   let db = AppContext(ctx).db
   let group_guid = ctx.getPathParams("groupguid", "")
   let current_user = db[].get_user(hash_email(ctx.session.getOrDefault("email", "")))
@@ -68,8 +69,11 @@ proc show*(ctx: Context) {.async, gcsafe.} =
     if g.get.group_type == 0 and member.is_none():
       g = none(GroupItem)
 
-  if g.is_none():
-    resp ctx.layout("Not Found", title = &"Group {group_guid}"), code = Http404
-    return
+  result = (g, member)
+
+proc show*(ctx: Context) {.async, gcsafe.} =
+  let (g, member) = ctx.get_group()
+
+  if g.is_none(): return ctx.go404()
 
   resp ctx.layout(group_show(g.get, member), title = &"Group {g.get.name}")

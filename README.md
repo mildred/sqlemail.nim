@@ -26,6 +26,8 @@ Roadmap
 
 ### Immediate TODO ###
 
+- display articles in a group
+- display vote result for articles in a group
 - rework how articles are working, possibly rename articles to posts:
     - articles is a list of paragraphs
     - articles have an author (group_guid + local_user_id)

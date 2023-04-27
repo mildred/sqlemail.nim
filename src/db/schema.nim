@@ -1,5 +1,5 @@
 const schema* = @["""
-PRAGMA user_version = 6""", """
+PRAGMA user_version = 7""", """
 CREATE TABLE users (
             id            INTEGER PRIMARY KEY NOT NULL
           )""", """
@@ -49,55 +49,6 @@ CREATE TABLE group_member_items (
             pod_url            TEXT,
             local_user_id      TEXT,
             FOREIGN KEY (group_member_id) REFERENCES group_members (id)
-          )""", """
-CREATE TABLE moderations (
-            id                          INTEGER PRIMARY KEY NOT NULL,
-            group_id                    INTEGER NOT NULL,
-            member_id                   INTEGER NOT NULL,
-            article_id                  INTEGER NOT NULL,
-            group_guid                  TEXT NOT NULL,
-            member_pod_url              TEXT NOT NULL,
-            member_local_user_id        TEXT NOT NULL,
-            article_guid                TEXT NOT NULL,
-            score                       REAL NOT NULL,
-            FOREIGN KEY (group_id) REFERENCES group_items (id),
-            FOREIGN KEY (member_id) REFERENCES group_members (id),
-            FOREIGN KEY (article_id) REFERENCES articles (id),
-            FOREIGN KEY (group_guid) REFERENCES group_items (guid),
-            FOREIGN KEY (article_guid) REFERENCES articles (guid)
-          )""", """
-CREATE TABLE articles (
-            id                  INTEGER PRIMARY KEY NOT NULL,
-            patch_id            INTEGER NOT NULL,
-            user_id             INTEGER NOT NULL,
-
-            -- the item replying to, may be NULL
-            reply_guid          TEXT NOT NULL,          -- object guid being replied to
-            reply_type          TEXT NOT NULL,          -- object type (types)
-            reply_index         INTEGER DEFAULT 0,      -- unsure: paragraph replied to
-
-            -- author of the message
-            -- the message is not published here, the group is only used to keep track of the author
-            author_group_id     INTEGER NOT NULL,       -- author personal group
-            author_group_guid   TEXT NOT NULL,
-            author_member_id    INTEGER,                -- member local_id (optional)
-
-            -- group the article belongs to (can be same as author_group)
-            -- where the message is published. If the group is public (others readable) the reply is readable to anyone who has access to the original item
-            group_id            INTEGER NOT NULL,
-            group_guid          TEXT NOT NULL,
-            group_member_id     INTEGER,                -- local_id of member (NULL if other)
-
-            initial_score       REAL NOT NULL DEFAULT 1.0,
-            timestamp           REAL NOT NULL DEFAULT (julianday('now')),
-
-            FOREIGN KEY (reply_type) REFERENCES types (type),
-            FOREIGN KEY (patch_id) REFERENCES patches (id),
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (author_group_id) REFERENCES group_items (id),
-            FOREIGN KEY (author_group_guid) REFERENCES group_items (guid),
-            FOREIGN KEY (group_id) REFERENCES group_items (id),
-            FOREIGN KEY (group_guid) REFERENCES group_items (guid)
           )""", """
 CREATE TABLE group_items (
             id                       INTEGER PRIMARY KEY NOT NULL,
@@ -156,5 +107,41 @@ CREATE TABLE user_pods (
             local_user_id TEXT NOT NULL,        -- public user id scoped by pod URL
             CONSTRAINT user_id_pod_url_unique UNIQUE (user_id, pod_url),
             FOREIGN KEY (user_id) REFERENCES users (id)
+          )""", """
+CREATE TABLE articles (
+            id                  INTEGER PRIMARY KEY NOT NULL,
+            patch_id            INTEGER NOT NULL,
+            user_id             INTEGER NOT NULL,
+
+            -- the article it modified
+            mod_article_id      INTEGER DEFAULT NULL,
+            mod_article_guid    INTEGER DEFAULT NULL,
+
+            -- the item replying to, may be NULL
+            reply_guid          TEXT DEFAULT NULL,      -- object guid being replied to (article)
+            reply_index         INTEGER DEFAULT NULL,   -- paragraph replied to within article
+
+            -- author of the message
+            -- the message is not published here, the group is only used to keep track of the author
+            author_group_id     INTEGER NOT NULL,       -- author personal group
+            author_group_guid   TEXT NOT NULL,
+            author_member_id    INTEGER,                -- member local_id (optional)
+
+            -- group the article belongs to (can be same as author_group)
+            -- where the message is published. If the group is public (others readable) the reply is readable to anyone who has access to the original item
+            group_id            INTEGER NOT NULL,
+            group_guid          TEXT NOT NULL,
+            group_member_id     INTEGER,                -- local_id of member (NULL if other)
+
+            timestamp           REAL NOT NULL DEFAULT (julianday('now')),
+
+            FOREIGN KEY (mod_article_id) REFERENCES articles (id),
+            FOREIGN KEY (mod_article_guid) REFERENCES articles (guid),
+            FOREIGN KEY (patch_id) REFERENCES patches (id),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (author_group_id) REFERENCES group_items (id),
+            FOREIGN KEY (author_group_guid) REFERENCES group_items (guid),
+            FOREIGN KEY (group_id) REFERENCES group_items (id),
+            FOREIGN KEY (group_guid) REFERENCES group_items (guid)
           )"""]
 

@@ -60,7 +60,7 @@ proc update*(ctx: Context) {.async, gcsafe.} =
   article.user_id = current_user.get.id
   article.from_html(html.get)
 
-  db[].create_article(article, parent_patch.get)
+  article.id = db[].create_article(article, parent_patch.get)
 
   resp "", Http201
 

@@ -147,7 +147,7 @@ func group_show*(group: GroupItem, member: Option[GroupMember]): string = tmpli 
   <p>TODO: show articles of group</p>
 
   $if member.is_some() {
-    $(article_editor("", "", fullpage = false, url = "./articles/", save_btn = "Send"))
+    $(article_editor("", "", fullpage = false, url = "./posts/", save_btn = "Send"))
   }
 """
 
