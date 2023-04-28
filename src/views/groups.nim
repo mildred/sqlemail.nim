@@ -1,9 +1,13 @@
+import std/prelude
 import std/options
 
 import templates
 
 import ../db/groups
-import ./articles
+import ../db/articles
+import ../convert_articles
+import ./common
+import ./articles as varticles
 
 func group_new*(): string = tmpli html"""
   <article>
@@ -84,7 +88,7 @@ func group_members_show*(group: GroupItem): string = tmpli html"""
   }
 """
 
-func group_show*(group: GroupItem, member: Option[GroupMember]): string = tmpli html"""
+func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Article]): string = tmpli html"""
   <p>
   $if group.group_type == 0 {
     $if group.members.len == 1 {
@@ -144,7 +148,9 @@ func group_show*(group: GroupItem, member: Option[GroupMember]): string = tmpli 
 
   $(group_members_show(group))
 
-  <p>TODO: show articles of group</p>
+  $for art in posts {
+    <article data-patch-id="$(h($art.patch_id))" class="viewer">$(art.to_html())</article>
+  }
 
   $if member.is_some() {
     $(article_editor("", "", fullpage = false, url = "./posts/", save_btn = "Send"))

@@ -7,6 +7,7 @@ import ./errors
 import ../context
 import ../db/users
 import ../db/groups
+import ../db/articles
 import ../views/layout
 import ../views/groups as vgroups
 
@@ -72,8 +73,11 @@ proc get_group*(ctx: Context): tuple[group: Option[GroupItem], member: Option[Gr
   result = (g, member)
 
 proc show*(ctx: Context) {.async, gcsafe.} =
+  let db = AppContext(ctx).db
   let (g, member) = ctx.get_group()
 
   if g.is_none(): return ctx.go404()
 
-  resp ctx.layout(group_show(g.get, member), title = &"Group {g.get.name}")
+  let posts = db[].group_get_posts(g.get.id)
+
+  resp ctx.layout(group_show(g.get, member, posts), title = &"Group {g.get.name}")

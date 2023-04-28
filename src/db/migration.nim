@@ -294,13 +294,15 @@ proc migrate*(db: var Database): bool =
         """)
         user_version = 6
       of 6:
-        db.exec("DROP TABLE moderations")
+        db.exec("DROP TABLE IF EXISTS moderations")
         db.exec("DROP TABLE articles")
         db.exec("""
           CREATE TABLE IF NOT EXISTS articles (
             id                  INTEGER PRIMARY KEY NOT NULL,
+            guid                TEXT NOT NULL,
             patch_id            INTEGER NOT NULL,
-            user_id             INTEGER NOT NULL,
+            patch_guid          TEXT NOT NULL,
+            user_id             INTEGER,
 
             -- the article it modified
             mod_article_id      INTEGER DEFAULT NULL,
@@ -324,6 +326,7 @@ proc migrate*(db: var Database): bool =
 
             timestamp           REAL NOT NULL DEFAULT (julianday('now')),
 
+            CONSTRAINT guid_unique UNIQUE (guid)
             FOREIGN KEY (mod_article_id) REFERENCES articles (id),
             FOREIGN KEY (mod_article_guid) REFERENCES articles (guid),
             FOREIGN KEY (patch_id) REFERENCES patches (id),

@@ -42,8 +42,10 @@ type
     group_member_id: int
     group: ref GroupItem
     group_member: ref GroupMember
+    mod_article_guid: Option[string]
     timestamp: float
     paragraphs: seq[Paragraph]
+    score: float
 
 proc set_author*(article: var Article, group: GroupItem, member: GroupMember) =
   new(article.author_group)
@@ -73,6 +75,42 @@ proc last_article(user_id: int, name: string): Option[tuple[id: int, patch_id: i
   ORDER BY a.timestamp DESC
   LIMIT    1
 """ .}
+
+iterator articles_for_group(group_id: int): tuple[
+  id: int, guid: string, patch_id: int, patch_guid: string,
+  user_id: Option[int],
+  reply_guid: Option[string], reply_index: Option[int],
+  author_group_id: int, author_group_guid: string, author_member_id: int,
+  group_id: int, group_guid: string, group_member_id: int,
+  timestamp: float, score: float
+] {.importdb: """
+  SELECT
+    a.id, a.guid, a.patch_id, a.patch_guid,
+    a.user_id,
+    a.reply_guid, a.reply_index,
+    a.author_group_id, a.author_group_guid, a.author_member_id,
+    a.group_id, a.group_guid, a.group_member_id,
+    a.timestamp,
+    ( g.moderation_default_score +
+      SUM( MIN(MAX(v.vote, -1), 1) * MAX(m.weight, 0) )
+    ) AS score
+  FROM
+    articles a
+    JOIN votes v ON v.article_id = a.id
+    JOIN group_items g ON v.group_id = g.id
+    JOIN group_members m ON m.group_item_id = g.id AND v.member_local_user_id = m.local_id
+  WHERE
+    g.id = $group_id
+  GROUP BY
+    a.id, a.guid, a.patch_id, a.patch_guid,
+    a.user_id,
+    a.reply_guid, a.reply_index,
+    a.author_group_id, a.author_group_guid, a.author_member_id,
+    a.group_id, a.group_guid, a.group_member_id,
+    a.timestamp
+  ORDER BY
+    a.timestamp ASC
+""".} = discard
 
 iterator paragraphs(patch_id: int): tuple[id: int, guid: string, style: string, text: string] {.importdb: """
   SELECT   p.id, p.guid, p.style, p.text
@@ -132,6 +170,7 @@ proc get_patch_id(guid: string): Option[tuple[id: int]] {.importdb: """
 proc insert_patch(guid, parent_guid: string): tuple[id: int] {.importdb: """
   INSERT INTO patches (guid, parent_id)
   SELECT $guid, (SELECT id FROM patches WHERE guid = $parent_guid)
+  ON CONFLICT (guid) DO NOTHING
   RETURNING id
 """.}
 
@@ -142,14 +181,25 @@ proc insert_patch_item(patch_guid, paragraph_guid: string, rank: int) {.importdb
          $rank
 """.}
 
-proc insert_article(patch_guid: string, user_id: int, subject_guid: Option[string], author_group_id: int, author_group_guid: string, author_member_id: int, group_id: int, group_guid: string, group_member_id: int): tuple[id: int] {.importdb: """
-  INSERT INTO articles (patch_id, user_id, reply_guid, reply_index, author_group_id, author_group_guid, author_member_id, group_id, group_guid, group_member_id, timestamp)
-  SELECT (SELECT id FROM patches WHERE guid = $patch_guid),
-         $user_id, $subject_guid, NULL, $author_group_id, $author_group_guid, IIF($author_member_id < 0, NULL, $author_member_id), $group_id, $group_guid, IIF($group_member_id < 0, NULL, $group_member_id), julianday('now')
+proc insert_article(
+  guid: string, patch_guid: string, user_id: int, subject_guid: Option[string],
+  author_group_id: int, author_group_guid: string, author_member_id: int,
+  group_id: int, group_guid: string, group_member_id: int
+): tuple[id: int] {.importdb: """
+  INSERT INTO articles (
+    guid, patch_id, patch_guid, user_id, reply_guid, reply_index, author_group_id,
+    author_group_guid, author_member_id, group_id, group_guid, group_member_id,
+    timestamp)
+  SELECT
+    $guid, (SELECT id FROM patches WHERE guid = $patch_guid), $patch_guid,
+    $user_id, $subject_guid, NULL, $author_group_id, $author_group_guid,
+    IIF($author_member_id < 0, NULL, $author_member_id),
+    $group_id, $group_guid,
+    IIF($group_member_id < 0, NULL, $group_member_id), julianday('now')
   RETURNING id
 """.}
 
-proc compute_hash*(obj: Subject | Paragraph | Patch): string {.gcsafe.}
+proc compute_hash*(obj: Subject | Paragraph | Patch | Article): string {.gcsafe.}
 
 proc to_json_node*(subject: Subject): JsonNode =
   result = %*{"t": "subject", "n": subject.name}
@@ -176,6 +226,7 @@ proc to_json_node*(art: Article): JsonNode =
     "t": "article",
     "ts": art.timestamp,
     "p": art.patch_guid,
+    "mod": if art.mod_article_guid.is_none: newJNull() else: %art.mod_article_guid.get,
     "r": %[%art.reply_guid, if art.reply_index.is_some: %art.reply_index.get else: newJNull()],
     "aut": art.author_group_guid,
     "autm": art.author_member_id,
@@ -183,10 +234,11 @@ proc to_json_node*(art: Article): JsonNode =
     "gm": art.group_member_id
   }
 
-proc compute_hash*(obj: Subject | Paragraph | Patch): string {.gcsafe.} =
+proc compute_hash*(obj: Subject | Paragraph | Patch | Article): string {.gcsafe.} =
   result = obj.to_json_node().compute_hash()
 
 proc create_article*(db: var Database, art: Article, parent_patch_id: string): int =
+  assert(art.guid != "")
   var subject_guid: Option[string]
   if art.subject_name != "":
     var sub: Subject = (name: art.subject_name)
@@ -201,12 +253,14 @@ proc create_article*(db: var Database, art: Article, parent_patch_id: string): i
     pat.paragraphs[i].guid = pat.paragraphs[i].compute_hash()
     i = i + 1
   pat.guid = pat.compute_hash()
-  discard db.insert_patch(pat.guid, pat.parent_guid)
-  var rank = 1
-  for p in pat.paragraphs:
-    db.insert_paragraph(p.guid, p.style, p.text)
-    db.insert_patch_item(pat.guid, p.guid, rank)
-    rank = rank + 1
+
+  if db.get_patch_id(pat.guid).is_none:
+    discard db.insert_patch(pat.guid, pat.parent_guid)
+    var rank = 1
+    for p in pat.paragraphs:
+      db.insert_paragraph(p.guid, p.style, p.text)
+      db.insert_patch_item(pat.guid, p.guid, rank)
+      rank = rank + 1
 
   let author_group_id = art.author_group.id
   let author_group_guid = art.author_group.guid
@@ -214,5 +268,31 @@ proc create_article*(db: var Database, art: Article, parent_patch_id: string): i
   let group_id = art.group.id
   let group_guid = art.group.guid
   let group_member_id = if art.group_member == nil: -1 else: art.group_member.local_id
-  result = db.insert_article(pat.guid, art.user_id, subject_guid, author_group_id, author_group_guid, author_member_id, group_id, group_guid, group_member_id).id
+  result = db.insert_article(art.guid, pat.guid, art.user_id, subject_guid, author_group_id, author_group_guid, author_member_id, group_id, group_guid, group_member_id).id
+
+proc group_get_posts*(db: var Database, group_id: int): seq[Article] =
+  result = @[]
+  for row in db.articles_for_group(group_id):
+    var a: Article
+    a.id = row.id
+    a.guid = row.guid
+    a.patch_id = row.patch_id
+    a.patch_guid = row.patch_guid
+    a.user_id = row.user_id.get(-1)
+    a.reply_guid = row.reply_guid.get("")
+    a.reply_index = row.reply_index
+    a.author_group_id = row.author_group_id
+    a.author_group_guid = row.author_group_guid
+    a.author_member_id = row.author_member_id
+    a.group_id = row.group_id
+    a.group_guid = row.group_guid
+    a.group_member_id = row.group_member_id
+    a.timestamp = row.timestamp
+    a.score = row.score
+    a.paragraphs = @[]
+
+    for p in db.paragraphs(a.patch_id):
+      a.paragraphs.add(p)
+
+    result.add(a)
 

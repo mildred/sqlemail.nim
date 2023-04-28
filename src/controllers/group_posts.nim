@@ -32,6 +32,7 @@ proc create*(ctx: Context) {.async, gcsafe.} =
   article.set_group(g.get, member.get)
   article.from_html(html.get)
   article.timestamp = db[].get_julianday()
+  article.guid = article.compute_hash()
 
   article.id = db[].create_article(article, parent_patch.get)
 

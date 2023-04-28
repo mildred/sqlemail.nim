@@ -110,8 +110,10 @@ CREATE TABLE user_pods (
           )""", """
 CREATE TABLE articles (
             id                  INTEGER PRIMARY KEY NOT NULL,
+            guid                TEXT NOT NULL,
             patch_id            INTEGER NOT NULL,
-            user_id             INTEGER NOT NULL,
+            patch_guid          TEXT NOT NULL,
+            user_id             INTEGER,
 
             -- the article it modified
             mod_article_id      INTEGER DEFAULT NULL,
@@ -135,6 +137,7 @@ CREATE TABLE articles (
 
             timestamp           REAL NOT NULL DEFAULT (julianday('now')),
 
+            CONSTRAINT guid_unique UNIQUE (guid)
             FOREIGN KEY (mod_article_id) REFERENCES articles (id),
             FOREIGN KEY (mod_article_guid) REFERENCES articles (guid),
             FOREIGN KEY (patch_id) REFERENCES patches (id),

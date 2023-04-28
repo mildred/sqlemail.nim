@@ -13,7 +13,7 @@ type
   Style* = tuple
     path: seq[StyleItem]
 
-proc parse_style*(style: string): Style =
+func parse_style*(style: string): Style =
   for i in style.split(" "):
     var item_str = i
     var item: StyleItem
@@ -25,7 +25,13 @@ proc parse_style*(style: string): Style =
       item_str = item_str[1..^1]
     let parts = item_str.split(".")
     if parts.len >= 1:
-      item.name = parts[0]
+      case parts[0]
+      of "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote":
+        item.name = parts[0]
+      of "bq":
+        item.name = "blockquote"
+      else:
+        item.name = "div"
       item.classes = parts[1..^1]
       result.path.add(item)
   if result.path.len > 0:
@@ -54,7 +60,7 @@ proc html_close_open_style(parts: var seq[string], last_style, style: Style, ope
 
 type AfterParagraphCallback = proc(p: Paragraph): string {.gcsafe.}
 
-proc to_html*(article: Article, after: AfterParagraphCallback = nil): string =
+proc to_html*(article: Article, after: AfterParagraphCallback): string =
   var parts: seq[string] = @[]
   var style, last_style: Style
   for p in article.paragraphs:
@@ -70,6 +76,10 @@ proc to_html*(article: Article, after: AfterParagraphCallback = nil): string =
   html_close_open_style(parts, last_style, style)
 
   result = parts.join("")
+
+func to_html*(article: Article): string =
+  {.cast(noSideEffect).}:
+    return article.to_html(nil)
 
 proc add_paragraphs_from_nodes(par: var seq[Paragraph], node: XmlNode, path: var seq[string]) =
   var last_text = false
