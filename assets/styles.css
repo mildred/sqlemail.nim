@@ -89,3 +89,63 @@ nav {
   background-color: unset;
   color: var(--color-link);
 }
+
+.group-message-list {
+  /*display: flex;
+  flex-flow: column nowrap;*/
+  display: flow-root;
+}
+
+.group-message-list > article.message {
+  /*max-width: calc(max(100% - 5rem, 80%));*/
+  min-width: 40%;
+  border-radius: 0.5em;
+  padding: 0.5em;
+  margin: 0 0 0.5em 0;
+  border: solid thin #888;
+  position: relative;
+  float: left;
+  clear: both;
+}
+
+.group-message-list > article.message p {
+  padding: 0;
+  margin: 0 0 0.2em 0;
+}
+
+.group-message-list > article.message li {
+  margin: 0 0 0.2em 0;
+}
+
+.group-message-list > article.message > .message-author {
+  font-weight: bold;
+}
+
+.group-message-list > article.message > .message-score,
+.group-message-list > article.message > .message-time {
+  font-size: 0.8em;
+  text-align: right;
+  color: #888;
+  margin: 0;
+  position: absolute;
+  align-self: flex-start;
+}
+
+.group-message-list > article.message > .message-time {
+  right: 0.5rem;
+  bottom: 0;
+}
+
+.group-message-list > article.message > .message-score {
+  right: 3.5rem;
+  bottom: 0;
+}
+
+.group-message-list > article.message:not(.message-self) {
+  background-color: #eee;
+}
+
+.group-message-list > article.message.message-self {
+  /* align-self: flex-end; */
+  background-color: #ddd;
+}

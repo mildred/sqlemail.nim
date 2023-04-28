@@ -88,6 +88,12 @@ func group_members_show*(group: GroupItem): string = tmpli html"""
   }
 """
 
+func message_from_self*(art: Article, group: GroupItem, member: Option[GroupMember]): bool =
+  result =
+    member.is_some and
+    art.author_group_guid == group.guid and
+    art.author_member_id == member.get.local_id
+
 func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Article]): string = tmpli html"""
   <p>
   $if group.group_type == 0 {
@@ -148,13 +154,26 @@ func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Artic
 
   $(group_members_show(group))
 
-  $for art in posts {
-    <article data-patch-id="$(h($art.patch_id))" class="viewer">
-      <p>$(h(art.group_member.nickname))</p>
-      $(art.to_html())
-      <p>Score: $(h($art.score))</p>
-    </article>
-  }
+  <div class="group-message-list">
+    ${ var last_local_id = -1; }
+    $for art in posts {
+      <article
+        class="
+          message
+          $(if message_from_self(art, group, member): "message-self" else: "")
+        "
+        data-patch-id="$(h($art.patch_id))"
+        class="viewer">
+        $if last_local_id != art.group_member.local_id {
+          <p class="message-author">$(h(art.group_member.nickname))</p>
+        }
+        $(art.to_html())
+        <p class="message-score">$(h($art.score))</p>
+        <p class="message-time">$(h(art.timestamp.format_time()))</p>
+      </article>
+      ${ last_local_id = art.group_member.local_id }
+    }
+  </div>
 
   $if member.is_some() {
     $(article_editor("", "", fullpage = false, url = "./posts/", save_btn = "Send"))
