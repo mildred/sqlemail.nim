@@ -72,11 +72,24 @@ Roadmap
 - [x] UI to create default user groups: "Create public|private identity"
 - [x] Basic display of group
 - [x] Basic posting articles to a group
-- [ ] Ability to join groups by their guid
-- [ ] Basic display of articles in a group
+- [ ] Ability to join groups by their guid (join buttons in group page)
+- [x] Basic display of articles in a group
 - [ ] Controls to allow group members to vote for an article in a group
+- [ ] Ensure a user can only vote once per article
+- [ ] Interface to vote for articles in other groups. The vote is not cast for
+  the current group but for the context group. This allows to add articles to
+  another group. This is a forwarding feature except that negative votes can be
+  used for overlay moderation groups.
+- [ ] reply to an existing message
+- [ ] Svelte UI
+- ---
 - [ ] Publication of groups to subjects
-- [ ] Pod moderation overlay (necessary once public groups exists, not before)
+- [ ] Pod moderation overlay (necessary once public groups exists, not before).
+  If vote exists in overlay group, take that vote as the article score instead
+  of performing regular score computation. Ideally overlays can be configured
+  per-user or per-instance (or both) and can be configured to contribute to the
+  score computation or to replace it. Per-user overlay is applied first and
+  per-instance overlay is applied last and can override anything.
 - [ ] Think more about private messages and public messages. Allow replies to
   public objects to be private. Define clearly which messages are public and
   which are private. Private messages can only be accessed by people who knows a

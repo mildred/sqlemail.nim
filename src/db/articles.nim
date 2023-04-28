@@ -82,7 +82,8 @@ iterator articles_for_group(group_id: int): tuple[
   reply_guid: Option[string], reply_index: Option[int],
   author_group_id: int, author_group_guid: string, author_member_id: int,
   group_id: int, group_guid: string, group_member_id: int,
-  timestamp: float, score: float
+  timestamp: float, score: float,
+  aut_member_id: int, aut_member_local_id: int, aut_member_weight: float, aut_member_nickname: string
 ] {.importdb: """
   SELECT
     a.id, a.guid, a.patch_id, a.patch_guid,
@@ -93,7 +94,8 @@ iterator articles_for_group(group_id: int): tuple[
     a.timestamp,
     ( g.moderation_default_score +
       SUM( MIN(MAX(v.vote, -1), 1) * MAX(m.weight, 0) )
-    ) AS score
+    ) AS score,
+    m.id, m.local_id, m.weight, m.nickname
   FROM
     articles a
     JOIN votes v ON v.article_id = a.id
@@ -107,7 +109,8 @@ iterator articles_for_group(group_id: int): tuple[
     a.reply_guid, a.reply_index,
     a.author_group_id, a.author_group_guid, a.author_member_id,
     a.group_id, a.group_guid, a.group_member_id,
-    a.timestamp
+    a.timestamp,
+    m.id, m.local_id, m.weight, m.nickname
   ORDER BY
     a.timestamp ASC
 """.} = discard
@@ -290,6 +293,12 @@ proc group_get_posts*(db: var Database, group_id: int): seq[Article] =
     a.timestamp = row.timestamp
     a.score = row.score
     a.paragraphs = @[]
+
+    a.group_member = new(GroupMember)
+    a.group_member.id = row.aut_member_id
+    a.group_member.local_id = row.aut_member_local_id
+    a.group_member.weight = row.aut_member_weight
+    a.group_member.nickname = row.aut_member_nickname
 
     for p in db.paragraphs(a.patch_id):
       a.paragraphs.add(p)

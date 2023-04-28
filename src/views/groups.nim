@@ -149,7 +149,11 @@ func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Artic
   $(group_members_show(group))
 
   $for art in posts {
-    <article data-patch-id="$(h($art.patch_id))" class="viewer">$(art.to_html())</article>
+    <article data-patch-id="$(h($art.patch_id))" class="viewer">
+      <p>$(h(art.group_member.nickname))</p>
+      $(art.to_html())
+      <p>Score: $(h($art.score))</p>
+    </article>
   }
 
   $if member.is_some() {
