@@ -26,6 +26,20 @@ Discussion features:
 - TODO: cross-post articles to multiple groups
 - TODO: full featured vote mechanism for groups and alternate moderation groups
 
+Dev & run
+---------
+
+Run disputatio:
+
+    nimble c src/disputatio && src/disputatio --secretkey 3579E8A82BF3D5F08C6316B5560E50EC
+
+Use a fixed secretkey to restart the server and keep your browser sessions alive
+(stay logged-in)
+
+Run Svelte app (disputatio service must run on port 8080):
+
+    npm run dev
+
 Roadmap
 -------
 
@@ -73,6 +87,7 @@ Roadmap
 - [x] Basic display of group
 - [x] Basic posting articles to a group
 - [ ] Ability to join groups by their guid (join buttons in group page)
+- [ ] Ability to add user on private groups by existing members
 - [x] Basic display of articles in a group
 - [ ] Controls to allow group members to vote for an article in a group
 - [ ] Ensure a user can only vote once per article
