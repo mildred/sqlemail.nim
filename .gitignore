@@ -1,2 +1,3 @@
 *.sqlite
 /src/disputatio
+/node_modules/
