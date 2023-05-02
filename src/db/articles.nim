@@ -76,7 +76,7 @@ proc last_article(user_id: int, name: string): Option[tuple[id: int, patch_id: i
   LIMIT    1
 """ .}
 
-iterator articles_for_group(group_id: int): tuple[
+iterator articles_for_group(group_root_guid: string): tuple[
   id: int, guid: string, patch_id: int, patch_guid: string,
   user_id: Option[int],
   reply_guid: Option[string], reply_index: Option[int],
@@ -92,17 +92,23 @@ iterator articles_for_group(group_id: int): tuple[
     a.author_group_id, a.author_group_guid, a.author_member_id,
     a.group_id, a.group_guid, a.group_member_id,
     a.timestamp,
-    ( g.moderation_default_score +
-      SUM( MIN(MAX(v.vote, -1), 1) * MAX(m.weight, 0) )
+    ( g.moderation_default_score + SUM(
+        CASE WHEN m.weight < 0 THEN
+          m.weight
+        ELSE
+          MIN(MAX(v.vote, -1), 1) * m.weight
+        END
+      )
     ) AS score,
-    m.id, m.local_id, m.weight, m.nickname
+    aa.id, aa.local_id, aa.weight, aa.nickname
   FROM
-    articles a
-    JOIN votes v ON v.article_id = a.id
-    JOIN group_items g ON v.group_id = g.id
-    JOIN group_members m ON m.group_item_id = g.id AND v.member_local_user_id = m.local_id
+    group_items g
+    JOIN votes v ON v.group_id = g.id
+    JOIN articles a ON a.id = v.article_id
+    JOIN group_members m ON (m.group_item_id, m.local_id) = (g.id, v.member_local_user_id)
+    JOIN group_members aa ON (aa.group_item_id, aa.local_id) = (a.author_group_id, a.author_member_id)
   WHERE
-    g.id = $group_id
+    g.root_guid = $group_root_guid
   GROUP BY
     a.id, a.guid, a.patch_id, a.patch_guid,
     a.user_id,
@@ -110,7 +116,7 @@ iterator articles_for_group(group_id: int): tuple[
     a.author_group_id, a.author_group_guid, a.author_member_id,
     a.group_id, a.group_guid, a.group_member_id,
     a.timestamp,
-    m.id, m.local_id, m.weight, m.nickname
+    aa.id, aa.local_id, aa.weight, aa.nickname
   ORDER BY
     a.timestamp ASC
 """.} = discard
@@ -273,9 +279,9 @@ proc create_article*(db: var Database, art: Article, parent_patch_id: string): i
   let group_member_id = if art.group_member == nil: -1 else: art.group_member.local_id
   result = db.insert_article(art.guid, pat.guid, art.user_id, subject_guid, author_group_id, author_group_guid, author_member_id, group_id, group_guid, group_member_id).id
 
-proc group_get_posts*(db: var Database, group_id: int): seq[Article] =
+proc group_get_posts*(db: var Database, group: GroupItem): seq[Article] =
   result = @[]
-  for row in db.articles_for_group(group_id):
+  for row in db.articles_for_group(group.root_guid):
     var a: Article
     a.id = row.id
     a.guid = row.guid

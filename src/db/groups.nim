@@ -67,7 +67,7 @@ proc to_json_node*(gi: GroupItem): JsonNode =
     "s": gi.moderation_default_score,
     "m": gi.members.to_json_node()
   }
-  if gi.root_guid != "":
+  if gi.root_guid != "" and gi.root_guid != gi.guid:
     result["root"] = %*gi.root_guid
   if gi.parent_guid != "":
     result["parent"] = %*gi.parent_guid
@@ -78,9 +78,9 @@ proc compute_hash*(obj: GroupItem): string =
 proc compute_new*(gi: var GroupItem) =
   gi.guid = gi.compute_hash()
 
-proc insert_group_item(guid, name, seed_userdata: string, group_type: int, others_members_weight: float, moderation_default_score: float): tuple[id: int] {.importdb: """
-  INSERT INTO group_items (guid, root_guid, name, seed_userdata, group_type, others_members_weight, moderation_default_score)
-  VALUES ($guid, $guid, $name, $seed_userdata, $group_type, $others_members_weight, $moderation_default_score)
+proc insert_group_item(guid, root_guid: string, parent_guid: Option[string], parent_id: Option[int], name, seed_userdata: string, group_type: int, others_members_weight: float, moderation_default_score: float): tuple[id: int] {.importdb: """
+  INSERT INTO group_items (guid, root_guid, parent_id, parent_guid, name, seed_userdata, group_type, others_members_weight, moderation_default_score)
+  VALUES ($guid, $root_guid, $parent_id, $parent_guid, $name, $seed_userdata, $group_type, $others_members_weight, $moderation_default_score)
   ON CONFLICT DO NOTHING
   RETURNING id
 """.}
@@ -97,7 +97,7 @@ proc insert_group_member_item(group_member_id: int, pod_url: string, local_user_
   RETURNING id
 """.}
 
-proc select_group_item_by_guid(guid: string): Option[tuple[
+proc select_latest_group_item_by_guid(guid: string): Option[tuple[
     id: int,
     guid: string,
     root_guid: string,
@@ -112,7 +112,9 @@ proc select_group_item_by_guid(guid: string): Option[tuple[
   SELECT  id, guid, root_guid, parent_id, parent_guid, group_type, name,
           seed_userdata, others_members_weight, moderation_default_score
   FROM    group_items
-  WHERE guid = $guid
+  WHERE root_guid = $guid AND NOT EXISTS (
+    SELECT gi.id FROM group_items gi WHERE gi.parent_id = group_items.id
+  )
 """.} = discard
 
 iterator select_root_group_item_by_user_id(user_id: int): tuple[
@@ -162,15 +164,27 @@ iterator select_group_member_items(group_member_id: int): tuple[
 """.} = discard
 
 proc save_new*(db: var Database, gi: GroupItem) =
-  assert(gi.guid != "")
-  for member in gi.members:
-    assert(member.items.len > 0, "group member must have pods")
+  db.transaction:
+    assert(gi.guid != "")
+    for member in gi.members:
+      assert(member.items.len > 0, "group member must have pods")
 
-  let group = db.insert_group_item(gi.guid, gi.name, gi.seed_userdata, gi.group_type, gi.others_members_weight, gi.moderation_default_score)
-  for member in gi.members:
-    let mem = db.insert_group_member(member.local_id, group.id, member.nickname, member.weight, member.user_id)
-    for item in member.items:
-      discard db.insert_group_member_item(mem.id, item.pod_url, item.local_user_id)
+    let root_guid = if gi.root_guid == "": gi.guid else: gi.root_guid
+
+    var parent_id: Option[int]
+    var parent_guid: Option[string]
+
+    if root_guid != gi.guid:
+      assert(gi.parent_id >= 0, "group item must have a parent id")
+      assert(gi.parent_guid != "", "group item must have a parent guid")
+      parent_id = some(gi.parent_id)
+      parent_guid = some(gi.parent_guid)
+
+    let group = db.insert_group_item(gi.guid, root_guid, parent_guid, parent_id, gi.name, gi.seed_userdata, gi.group_type, gi.others_members_weight, gi.moderation_default_score)
+    for member in gi.members:
+      let mem = db.insert_group_member(member.local_id, group.id, member.nickname, member.weight, member.user_id)
+      for item in member.items:
+        discard db.insert_group_member_item(mem.id, item.pod_url, item.local_user_id)
 
 proc list_groups_with_user*(db: var Database, user_id: int): seq[GroupItem] =
   result = @[]
@@ -185,7 +199,7 @@ proc list_groups_with_user*(db: var Database, user_id: int): seq[GroupItem] =
     result.add(gi)
 
 proc get_group*(db: var Database, guid: string): Option[GroupItem] =
-  let gi = db.select_group_item_by_guid(guid)
+  let gi = db.select_latest_group_item_by_guid(guid)
   if gi.is_none(): return none(GroupItem)
 
   let g = gi.get()
@@ -212,3 +226,10 @@ proc find_current_user*(g: GroupItem, user_id: int): Option[GroupMember] =
   for member in g.members:
     if member.user_id == user_id:
       return some(member)
+
+proc allocate_member_id*(g: GroupItem): int =
+  result = 1
+  for m in g.members:
+    if result <= m.local_id:
+      result = m.local_id + 1
+

@@ -86,7 +86,7 @@ Roadmap
 - [x] UI to create default user groups: "Create public|private identity"
 - [x] Basic display of group
 - [x] Basic posting articles to a group
-- [ ] Ability to join groups by their guid (join buttons in group page)
+- [x] Ability to join groups by their guid (join buttons in group page)
 - [ ] Ability to add user on private groups by existing members
 - [x] Basic display of articles in a group
 - [ ] Controls to allow group members to vote for an article in a group
@@ -97,7 +97,37 @@ Roadmap
   used for overlay moderation groups.
 - [ ] reply to an existing message
 - [ ] Svelte UI
+- [ ] Save bookmarked groups (bookmark announce group to be notified, do not
+  bookmark group where we are member for archived groups) - this will be need to
+  be shared with federation when porting user identities.
+- [ ] Save friends (bookmarked group with the two users in a predictive order)
+- [ ] Link member identities: membership within a group should not reference
+  directly pod_url and pod_user_id but the identity group where the pod settings
+  can be changed
+- [ ] Add ability to publish public articles (goes to the public group identity)
+- [ ] Add ability to post to ourselves via the private identity group
+- [x] Remove the unlisted identity group as it has no use 
+- [ ] mirroring group feature : create a group where the current user is admin
+  and add a setting in the pod that each article appearing in another specified
+  group where the current user is member is to be voted in this mirror group. It
+  allows alternative moderation groups but voting for each individual article is
+  performed automatically by the pod and not manually by the moderator. Add
+  setting for bidirectional sync where articles posted only in this mirror group
+  are posted in the original group (possibly without the same voting score)
+- [ ] Add option to see all the (public) groups where an article appears (in
+  order to discover alternative miror groups)
+- [ ] Ability to ban users. Any group member can raise/lower the weight on
+  another member which has a lower weight than himself. Giving a negative weight
+  to a member will multiply its weight with all the votes it can cast ensuring a
+  negative score for all the articles of this member.
+- [ ] Add timestamp to vote so the first timestamp can be considered the author
+  of a post in a group. Using the article author might link to another group
+  member and its nickname might not tell anything to the members seeing the
+  post.
 - ---
+- [ ] port user settings when migrating accounts
+    - [ ] bookmarked groups
+    - [ ] mirrored groups
 - [ ] Publication of groups to subjects
 - [ ] Pod moderation overlay (necessary once public groups exists, not before).
   If vote exists in overlay group, take that vote as the article score instead
@@ -119,6 +149,10 @@ Roadmap
 ### Long Term ###
 
 - Add federation
+- Allow migration even if origin pod no longer exists (associate oter group
+  member or a backup key to group member, and allow to update the member pods
+  from this backup key)
+  the member
 - Add Encryption
 - Add SMTP transport and be compatible with DeltaChat?
 

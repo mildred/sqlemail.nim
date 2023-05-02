@@ -116,7 +116,8 @@ func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Artic
   }
   $elif group.group_type == 3 {
     <strong>This is a public group</strong> and the invite link can be
-    published. Posts can be propagated publicly.
+    published. It may be globally searchable and posts can be propagated
+    publicly to any pod even without members.
   }
   $else {
     <strong>This is an unknown group type</strong> and the pod is probably out
@@ -137,17 +138,23 @@ func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Artic
       $elif group.moderation_default_score == 1 {
         Guest posts are visible unless moderated.
       }
-      $else {
-        Guest posts will receive a default moderation score of
+      $elif group.moderation_default_score > 0 {
+        Guest posts will be visible and receive a default moderation score of
         $(group.moderation_default_score).
+      }
+      $else {
+        Guest posts will not be visible by default because the default
+        moderation score is of $(group.moderation_default_score).
       }
     }
     $elif group.others_members_weight == 1 {
       <strong>Group is free</strong>, anyone can become a full member.
+      Moderation is collective by each member weight.
     }
     $else {
       <strong>Group is free</strong>, anyone can become a full member and
-      receeive a weight of $(group.others_members_weight).
+      receeive a weight of $(group.others_members_weight). Moderation is
+      collective by each member weight.
     }
   }
   </p>
@@ -177,6 +184,12 @@ func group_show*(group: GroupItem, member: Option[GroupMember], posts: seq[Artic
 
   $if member.is_some() {
     $(article_editor("", "", fullpage = false, url = "./posts/", save_btn = "Send"))
+  }
+  $elif group.others_members_weight != 0 or group.moderation_default_score != 0  {
+    <form action="./join/" method="POST">
+      <label>Nickname : <input type="text" name="self_nickname" /></label>
+      <button>Join</button>
+    </form>
   }
 """
 
