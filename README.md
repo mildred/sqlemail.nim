@@ -172,6 +172,12 @@ discussions are now duplicated on the new pod. Now the user removes the old
 account on the old pod and the old pod does not have access to the content any
 more.
 
+Better yet, have backup pods that sole purpose is to store user data, possibly
+encrypted by user key. Of origin pod of a user is deleted, the user can go to
+the backup pod and with its key restore their info and choose another pod. The
+user must have granted the backup pod the right to perform those tasks even
+though the backup pod might not have access to the encrypted data.
+
 ### Why not encrypt at start? ###
 
 Because this is difficult to do it right.
@@ -183,6 +189,16 @@ anyway.
 Also, if you don't trust your pod, it's easy to change the pod. If you don't
 trust other users' pods then this means you don't trust the other users. TODO:
 have a feature to restrict the participating pods in a private group.
+
+Also, it is possible to investigate having pods in the user device. Do not be
+strict about the pods connectivity and allow a wide range of reach methods. With
+this there is no need for e2e encryption as only pods participating to the group
+get the info and the pods belongs to the user devices. pod authentication and
+authorization is the only requirement as well as transport encryption.
+
+Investigate relay pods which can relay the federation protocol to allow a
+disconnect state. The federation messages will be encrypted pod to pod and the
+relay will not be able to read them.
 
 ### Why this moderation scheme? ###
 
