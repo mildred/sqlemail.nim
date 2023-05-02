@@ -124,6 +124,19 @@ Roadmap
   of a post in a group. Using the article author might link to another group
   member and its nickname might not tell anything to the members seeing the
   post.
+- [ ] Add option to show groups in threaded view or flat view (user setting)
+- [ ] Add option to give names to groups so they can be accessed as
+  /~user_id/name/ and it will show in threaded view and scores as if the user
+  weight was 1 (or max). The first article will appear as full page article and
+  following posts will appear as discussion over the article.
+- [ ] add ability to modify our own posts in a group, the new article is posted
+  to the group but the fact that it references a mod_article_id in the same
+  group signifies that it should replace the original article. Votes from the
+  original article applies to the modified article.
+- [ ] add ability for anyone to modify an article in a group but the modified
+  article will not replace the original article but appear as an alternative.
+  Votes determine which is shown (which has the highest score) bit it is clearly
+  indicated that this is a modification by somebody else.
 - ---
 - [ ] port user settings when migrating accounts
     - [ ] bookmarked groups
