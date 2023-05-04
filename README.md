@@ -169,6 +169,41 @@ Roadmap
 - Add Encryption
 - Add SMTP transport and be compatible with DeltaChat?
 
+### API ###
+
+API should be powerful enough to allow the client to request almost anyting in a
+single round-trip. The best way to do that is to allow clients to perform raw
+SQLite queries.
+
+How to ensure that this is safe?
+
+- the SQLite connection is not reused across users
+
+- ATTACH DATABASE with an empty string is issued to ensure that a specific
+  schema is created for the specific use of the API. The schema name is "api".
+
+- The api schema is populated with view restricting the objects the current user
+  is able to see
+
+- sqlite3_set_authorizer is called for the connection, the authorizer will only
+  authorize READS into the "api" schema and SELECT statements
+
+- virtual tables https://www.sqlite.org/vtab.html can be used to further improve
+  the API
+
+- the untrusted query is prepared and executed
+
+- the authorizer is removed (sqlite3_set_authorizer called with NULL) and the
+  api database is detached if the connection is to be reused.
+
+- possibly the API makes use of websockets so the same user-specific schema can
+  be reused and not recreated at each request.
+
+- alternative : use a specific connection with an empty temporary sqlite
+  database as main schema and attach the application database. Only permit the
+  views created in the main database and not in the attached application
+  database. This allows queries to avoid specify the "api." schema prefix.
+
 FAQ
 ---
 
