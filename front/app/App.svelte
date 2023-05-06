@@ -9,6 +9,8 @@
 
   api.request_session().then(s => {
     sess = JSON.stringify(s, null, '  ')
+    api.sql("SELECT 1, 2 UNION SELECT 3, 4;")
+    api.sql("SELECT COUNT(*) FROM (SELECT 1, 2 UNION SELECT 3, 4) a")
   })
 
   let hello = "World"

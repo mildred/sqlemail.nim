@@ -27,5 +27,25 @@ export class API {
       return body
     }
   }
+
+  async sql(sql_statement) {
+    while(true) {
+      const res = await fetch(this.api_url, {
+        method: 'POST',
+        headers: { 'Authorization': await this.auth.get_authorization_header() },
+        body: JSON.stringify({
+          sql: sql_statement
+        })
+      })
+      if (res.status == 401) {
+        await this.auth.handle_unauthorized(res)
+        continue
+      }
+      const body = await res.json()
+      this.session = body
+      console.log("[jmap] post response = %o", body)
+      return body
+    }
+  }
 }
 

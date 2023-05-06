@@ -42,6 +42,7 @@ proc init_routes*(app: Prologue) =
   app.addRoute("/.well-known/oauth-authorization-server/auth", oauth.auth, HttpGet)
   app.addRoute("/.well-known/oauth-authorization-server/token", oauth.token, HttpPost)
   app.addRoute("/.well-known/disputatio/", api.get, HttpGet, middlewares = @[ensureLoggedIn()])
+  app.addRoute("/.well-known/disputatio/", api.post, HttpPost, middlewares = @[ensureLoggedIn()])
   app.addRoute("/", home.index, HttpGet, middlewares = @[ensureLoggedIn()])
   app.addRoute("/logout", login.get_logout, HttpGet)
   app.addRoute("/logout", login.post_logout, HttpPost)
