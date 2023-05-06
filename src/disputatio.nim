@@ -89,7 +89,7 @@ when isMainModule:
   discard db
 
   var app = newApp(settings)
-  app.use(contextMiddleware(dbfile, assets, smtp, sender))
+  app.use(contextMiddleware(dbfile, assets, smtp, sender, secretkey))
   app.use(sessionMiddleware(settings))
   init_routes(app)
   app.run(AppContext)

@@ -43,6 +43,7 @@ proc send_code(ctx: AppContext, email, code: string, url: uri.Uri) =
 
 proc get*(ctx: Context) {.async, gcsafe.} =
   let db = AppContext(ctx).db
+  let redirect_url = ctx.getQueryParamsOption("redirect_url").get("")
   let email = ctx.getPathParams("email", "")
   let code = ctx.getPathParams("code", "")
   let email_hash = hash_email(email)
@@ -50,7 +51,7 @@ proc get*(ctx: Context) {.async, gcsafe.} =
 
   # No email: provide login form to ask for email
   if email == "" or user.is_none():
-    resp ctx.layout(login_form(), title = "Login")
+    resp ctx.layout(login_form(redirect_url), title = "Login")
     return
 
   let totp_url = user.get().get_email(email_hash).get().totp_url
@@ -60,14 +61,15 @@ proc get*(ctx: Context) {.async, gcsafe.} =
   if user.is_some:
     let current_user = user.get().get_email(hash_email(ctx.session.getOrDefault("email", "")))
     if current_user.is_some():
-      resp ctx.layout(login_totp_ok(totp_url) & login_totp(email, code), title = "TOTP")
+      resp ctx.layout(login_totp_ok(totp_url) & login_totp(email, code, redirect_url), title = "TOTP")
       return
 
-  resp ctx.layout(login_totp(email, code), title = "Login")
+  resp ctx.layout(login_totp(email, code, redirect_url), title = "Login")
 
 proc post*(ctx: Context) {.async, gcsafe.} =
   var totp: Totp
   let db = AppContext(ctx).db
+  let redirect_url = ctx.getPostParamsOption("redirect_url").get("")
   let email = ctx.getPostParamsOption("email").get()
   let email_hash = hash_email(email)
   let otp = ctx.getPostParamsOption("otp")
@@ -91,7 +93,7 @@ proc post*(ctx: Context) {.async, gcsafe.} =
     echo &"TOTP code for {email}: {code}"
     send_code(AppContext(ctx), email, code, url)
 
-    resp redirect("/login/" & email.encodeUrl())
+    resp redirect($ (parse_uri("/login/" & email.encodeUrl()) ? { "redirect_url": redirect_url }))
     return
 
   # code provided, check with OTP secret and store user in session
@@ -100,7 +102,7 @@ proc post*(ctx: Context) {.async, gcsafe.} =
 
   let totp_url = user.get().get_email(email_hash).get().totp_url
   if not validate_totp(totp_url, otp.get, 10*60):
-    resp ctx.layout(login_form(), title = "Retry Login")
+    resp ctx.layout(login_form(redirect_url), title = "Retry Login")
     return
 
   var pod_url = ctx.request.url / email
@@ -111,6 +113,10 @@ proc post*(ctx: Context) {.async, gcsafe.} =
 
   db[].user_email_mark_valid(email_hash)
   ctx.session["email"] = email
+
+  if redirect_url != "":
+    resp redirect(redirect_url)
+    return
 
   resp ctx.layout(login_totp_ok(totp_url), title = "Login succeeded")
 

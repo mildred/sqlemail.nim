@@ -14,10 +14,12 @@ type AppContext* = ref object of Context
   smtp*: string
   sender*: string
   assets_dir*: string
+  secretkey*: string
 
-proc contextMiddleware*(db_file, assets_dir, smtp, sender: string): HandlerAsync =
+proc contextMiddleware*(db_file, assets_dir, smtp, sender, secretkey: string): HandlerAsync =
   result = proc(ctx: Context) {.async.} =
     let ctx = AppContext(ctx)
+    ctx.secretkey = secretkey
     ctx.assets_dir = assets_dir
     ctx.smtp = smtp
     ctx.sender = sender

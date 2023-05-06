@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <body>
+    <h1>Ok</h1>
+    <p>You are logged-in, this window will close.</p>
+    <script>
+      const params = Array.from(
+        location.search.matchAll(/[^&\?]+/g),
+        p => p[0].match(/^([^=]*)=(.*)$/).slice(1).map(x => decodeURIComponent(x)))
+      window.opener.postMessage({
+        'oauth-response': params
+      }, origin);
+      window.close()
+    </script>
+  </body>
+</html>
+
