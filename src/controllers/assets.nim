@@ -10,7 +10,9 @@ import ./errors
 
 proc get*(ctx: Context) {.async, gcsafe.} =
   let assets_dir = AppContext(ctx).assets_dir
-  let path = ctx.getPathParams("path", "").replace("../", "")
+  var path = ctx.request.path.replace("../", "")
+  if path.ends_with("/"):
+    path = path & "index.html"
   let file_path = assets_dir / path
   if fileExists(file_path):
     await ctx.staticFileResponse(path, assets_dir)

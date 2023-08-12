@@ -7,7 +7,7 @@ export class API {
   }
 
   get api_url() {
-    return new URL('/.well-known/disputatio/', this.domain).toString()
+    return new URL('/.well-known/sqlemail/', this.domain).toString()
   }
 
   async request_session() {

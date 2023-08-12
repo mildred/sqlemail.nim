@@ -8,40 +8,59 @@ import std/json
 import prologue
 import easy_sqlite3
 
+import ../emaildb/migration
+import ../db/users
 import ../context
 
 proc get*(ctx: Context) {.async, gcsafe.} =
+  let db = AppContext(ctx).db
+  let current_user = db[].get_user(ctx.session.getOrDefault("email", ""))
+
   resp json_response(%*{
-    "ok": %true
+    "ok": %true,
+    "user": %current_user
   })
 
 proc post*(ctx: Context) {.async, gcsafe.} =
   let req = parse_json(ctx.request.body())
+  let users_db = AppContext(ctx).db
+  let current_user = users_db[].get_user(ctx.session.getOrDefault("email", ""))
 
   let sql = req["sql"].to(string)
   if sql == "":
     resp json_response(%*{ "ok": %true })
     return
 
-  var db = initDatabase(":memory:")
-  db.setAuthorizer do (code: AuthorizerActionCode, arg3, arg4, arg5, arg6: Option[string]) -> AuthorizerResult:
+  var db: Database
+  if current_user.is_none:
+    db = initDatabase(":memory:")
+  else:
+    db = open_user_database(AppContext(ctx).dbdir, AppContext(ctx).dbprefix, current_user.get.local_part)
+
+  db.setAuthorizer do (req: AuthorizerRequest) -> AuthorizerResult:
     result = deny
-    case code
-    of select:
+    case req.action_code
+    of select, recursive:
       result = ok
-    of function:
-      case arg4.get("")
-      of "count":
+    of read:
+      case req.target_table_name
+      of "email", "raw_email", "part", "header_name", "header_data", "header":
         result = ok
       else:
-        result = deny
+        discard
+    of function:
+      case req.function_name
+      of "count", "printf", "group_concat":
+        result = ok
+      else:
+        discard
     else:
       discard
-    echo &"authorize {code} {arg3} {arg4} {arg5} {arg6} = {result}"
+    echo &"authorize {req.repr} = {result}"
 
   let st = db.newStatement(sql)
-  var res_lines: seq[JsonNode]
-  for line in st.lines():
+  var res_rows: seq[JsonNode]
+  for line in st.rows():
     var res_line: seq[JsonNode]
     for col in line:
       case col.data_type
@@ -55,6 +74,6 @@ proc post*(ctx: Context) {.async, gcsafe.} =
         res_line.add(%col[string])
       of dt_null:
         res_line.add(newJNull())
-    res_lines.add(%res_line)
+    res_rows.add(%res_line)
 
-  resp json_response(%*{ "lines": %res_lines })
+  resp json_response(%*{ "rows": %res_rows })

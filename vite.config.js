@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     port: 5273,
     proxy: {
-      "/.well-known/disputatio/": "http://127.0.0.1:8080/",
+      "/.well-known/sqlemail/": "http://127.0.0.1:8080/",
       //*
       "/": {
         target: "http://127.0.0.1:8080/",
@@ -28,6 +28,15 @@ export default defineConfig({
         }
       }
       //*/
+    }
+  },
+  build: {
+    outDir: "../assets",
+    rollupOptions: {
+      input: {
+        app: front_root + '/app/index.html',
+        oauth_response: front_root + '/app/utils/oauth_response.html'
+      }
     }
   }
 })

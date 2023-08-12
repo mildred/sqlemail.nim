@@ -1,0 +1,21 @@
+# flyctl launch added from .gitignore
+**/*.sqlite
+src/disputatio
+node_modules
+nimbledeps
+
+# flyctl launch added from emailparser/.gitignore
+emailparser/**/*.dSYM
+emailparser/**/.*.swp
+emailparser/**/node_modules
+
+emailparser/**/.vscode
+emailparser/**/.DS_Store
+
+emailparser/**/Debug
+emailparser/**/Release
+emailparser/**/dist
+emailparser/**/build-web
+fly.toml
+
+Dockerfile
